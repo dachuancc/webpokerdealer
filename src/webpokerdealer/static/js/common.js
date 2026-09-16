@@ -282,14 +282,14 @@ const sfx = (() => {
     setEnabled,
     unlock,
     prime,
-    // Dealing a card: a softer, slightly lower flick.
-    deal() { swish({ dur: 0.09, gain: 0.2, from: 3000, to: 900 }); },
-    // Flipping a community card: a sharper, higher flick.
-    flip() { swish({ dur: 0.06, gain: 0.24, from: 4300, to: 1400 }); },
+    // Dealing a card: a crisp, short flick.
+    deal() { swish({ dur: 0.05, gain: 0.18, from: 5000, to: 1800, q: 1.2 }); },
+    // Flipping a community card: an even sharper flick.
+    flip() { swish({ dur: 0.035, gain: 0.22, from: 6000, to: 2200, q: 1.4 }); },
     // Showdown: two quick flips of the cards.
     reveal() {
-      swish({ dur: 0.06, gain: 0.24, from: 4300, to: 1400 });
-      setTimeout(() => swish({ dur: 0.07, gain: 0.22, from: 3600, to: 1100 }), 120);
+      swish({ dur: 0.035, gain: 0.22, from: 6000, to: 2200, q: 1.4 });
+      setTimeout(() => swish({ dur: 0.045, gain: 0.2, from: 5200, to: 1800, q: 1.2 }), 110);
     },
   };
 })();
