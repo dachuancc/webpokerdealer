@@ -37,12 +37,34 @@
   </footer>
 </main>
 
+<div id="host-gate" class="modal" hidden>
+  <div class="modal__panel modal__panel--narrow" role="dialog" aria-modal="true" aria-label="主持人验证">
+    <header class="modal__head">
+      <h2>主持人验证</h2>
+    </header>
+    <p class="muted small">这是公牌桌控制页。请输入创建牌桌时生成的 4 位 PIN。</p>
+    <form id="host-form" class="form">
+      <label class="field">
+        <span>主持人 PIN</span>
+        <input id="host-pin" inputmode="numeric" autocomplete="off"
+               maxlength="4" pattern="[0-9]{4}" placeholder="例如 4821" required>
+      </label>
+      <button type="submit" class="btn btn--primary btn--block">进入公牌桌</button>
+    </form>
+  </div>
+</div>
+
 <div id="settings" class="modal" hidden>
   <div class="modal__panel" role="dialog" aria-modal="true" aria-label="牌桌设置">
     <header class="modal__head">
       <h2>牌桌设置</h2>
       <button id="settings-close" class="icon-btn" aria-label="关闭">✕</button>
     </header>
+
+    <section class="modal__section">
+      <h3>主持人</h3>
+      <p class="muted small">换设备时用它验证：<strong id="host-pin-view" class="pin">—</strong></p>
+    </section>
 
     <section class="modal__section">
       <h3>座位顺序</h3>

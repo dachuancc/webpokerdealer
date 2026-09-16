@@ -12,6 +12,9 @@ const showdownBtn = qs("#showdown-btn");
 const settingsPanel = qs("#settings");
 const orderList = qs("#order-list");
 const historyList = qs("#history-list");
+const hostGate = qs("#host-gate");
+const hostPinInput = qs("#host-pin");
+const hostKey = `wpd:host:${code}`;
 
 const NEXT_LABELS = {
   preflop: "发翻牌",
@@ -207,6 +210,7 @@ function renderHistory(state) {
 }
 
 function renderSettings(state) {
+  qs("#host-pin-view").textContent = state.pin || "—";
   renderOrder(state);
   renderHistory(state);
 }
@@ -218,6 +222,41 @@ function openSettings() {
 function closeSettings() {
   settingsPanel.hidden = true;
 }
+
+/* ------------------------------------------------------- host authentication */
+
+function requirePin(message) {
+  if (message) toast(message);
+  if (socket) socket.close();
+  hostGate.hidden = false;
+  hostPinInput.value = "";
+  hostPinInput.focus();
+}
+
+qs("#host-form").addEventListener("submit", async (event) => {
+  event.preventDefault();
+  const pin = hostPinInput.value.trim();
+  if (!pin) return;
+  const button = event.target.querySelector("button");
+  button.disabled = true;
+  try {
+    const res = await fetch(`/api/tables/${encodeURIComponent(code)}/host`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ pin }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.detail || "PIN 不正确");
+    localStorage.setItem(hostKey, data.host_token);
+    hostGate.hidden = true;
+    connectBoard(data.host_token);
+  } catch (err) {
+    toast(err.message || "PIN 不正确");
+    hostPinInput.select();
+  } finally {
+    button.disabled = false;
+  }
+});
 
 /* --------------------------------------------------------------- connection */
 
@@ -231,14 +270,27 @@ function fatalTableGone(message) {
   seatsEl.replaceChildren(el("p", "muted", `${message} 请回首页重新创建牌桌。`));
 }
 
-socket = connectWS(`/ws/${code}?role=board`, {
-  onState: render,
-  onError: (message, reason) => {
-    toast(message);
-    if (reason === "table_missing") fatalTableGone(message);
-  },
-  onStatus: (status) => setConn(connBadge, status),
-});
+function connectBoard(token) {
+  socket = connectWS(
+    `/ws/${code}?role=board&token=${encodeURIComponent(token)}`,
+    {
+      onState: render,
+      onError: (message, reason) => {
+        if (reason === "table_missing") fatalTableGone(message);
+        else if (reason === "bad_host") {
+          // Stored token is stale (e.g. table was recreated): ask for the PIN.
+          localStorage.removeItem(hostKey);
+          requirePin(message);
+        } else toast(message);
+      },
+      onStatus: (status) => setConn(connBadge, status),
+    }
+  );
+}
+
+const savedHostToken = localStorage.getItem(hostKey);
+if (savedHostToken) connectBoard(savedHostToken);
+else requirePin();
 
 startBtn.addEventListener("click", () => socket.send(action("start_hand")));
 nextBtn.addEventListener("click", () => socket.send(action("next_street")));

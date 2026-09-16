@@ -258,6 +258,14 @@ button, input { font: inherit; }
   background: rgba(0, 0, 0, .6);
 }
 .modal[hidden] { display: none; }
+#host-gate { align-items: center; }
+.modal__panel--narrow { width: min(360px, 100%); }
+.pin {
+  color: var(--gold);
+  font-size: 1.3rem;
+  letter-spacing: .22em;
+  font-variant-numeric: tabular-nums;
+}
 .modal__panel {
   width: min(560px, 100%);
   background: #0e3529;

@@ -133,7 +133,13 @@ async def ws_endpoint(ws: WebSocket, code: str) -> None:
     role = ws.query_params.get("role", "player")
     conn.role = "board" if role == "board" else "player"
 
-    if conn.role == "player":
+    if conn.role == "board":
+        if not table.verify_host_token(ws.query_params.get("token", "")):
+            logger.info("ws reject %s code=%s reason=bad-host", _peer(ws), table.code)
+            await ws.send_json(_error("主持人验证失败，请输入 PIN", "bad_host"))
+            await ws.close()
+            return
+    else:
         player = table.find_by_token(ws.query_params.get("token", ""))
         if player is None:
             logger.info("ws reject %s code=%s reason=bad-token", _peer(ws), table.code)

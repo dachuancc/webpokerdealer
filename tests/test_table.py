@@ -230,6 +230,18 @@ def test_find_by_token():
     assert table.find_by_token("") is None
 
 
+def test_host_pin_and_token_verification():
+    table = make_table("Alice")
+    assert len(table.pin) == 4 and table.pin.isdigit()
+    assert table.verify_pin(table.pin)
+    wrong = "0000" if table.pin != "0000" else "1111"
+    assert not table.verify_pin(wrong)
+    assert not table.verify_pin("")
+    assert table.verify_host_token(table.host_token)
+    assert not table.verify_host_token("nope")
+    assert not table.verify_host_token("")
+
+
 def test_reset_clears_everything():
     table = make_table("Alice", "Bob")
     table.start_hand()

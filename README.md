@@ -25,6 +25,9 @@ uv run uvicorn webpokerdealer.main:app --reload --host 0.0.0.0 --port 8000
 > ```
 > 手机 / 平板用 `http://<本机局域网IP>:8000` 访问。
 
+> 主持人控制面需鉴权：创建牌桌后会自动记住主持人身份；换设备打开公牌桌时，
+> 需输入创建时生成的 4 位 PIN（可在公牌桌「⚙️ → 主持人」中查看）。玩家入座无需密码。
+
 浏览器打开 `http://localhost:8000`：
 
 1. 点"创建牌桌" → 进入**公牌桌**页面（平板放桌子中间），页面会显示加入二维码。
@@ -38,7 +41,7 @@ uv run uvicorn webpokerdealer.main:app --reload --host 0.0.0.0 --port 8000
 ## 测试
 
 ```bash
-uv run pytest    # 基线 44 用例全绿
+uv run pytest    # 基线 51 用例全绿
 ```
 
 ## 开发提示

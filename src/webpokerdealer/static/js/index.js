@@ -1,6 +1,7 @@
 /* Landing page: create a table or join an existing one. */
 
 const TOKEN_KEY = (code) => `wpd:token:${code}`;
+const HOST_KEY = (code) => `wpd:host:${code}`;
 const NAME_KEY = "wpd:name";
 
 qs("#create-btn").addEventListener("click", async (event) => {
@@ -10,6 +11,8 @@ qs("#create-btn").addEventListener("click", async (event) => {
     const res = await fetch("/api/tables", { method: "POST" });
     if (!res.ok) throw new Error("创建失败");
     const data = await res.json();
+    // Remember host control so the board page doesn't ask for the PIN again.
+    localStorage.setItem(HOST_KEY(data.code), data.host_token);
     location.href = `/board/${data.code}`;
   } catch (err) {
     toast(err.message || "创建失败");

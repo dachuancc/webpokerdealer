@@ -39,7 +39,7 @@ tests/                 # test_cards / test_table / test_web
 ```bash
 uv sync                                              # 安装依赖
 uv run uvicorn webpokerdealer.main:app --reload --host 0.0.0.0 --port 8000
-uv run pytest                                        # 跑测试（改动后必须全绿，基线 44）
+uv run pytest                                        # 跑测试（改动后必须全绿，基线 51）
 docker compose up -d --build                         # 本地验证容器
 ```
 
@@ -70,6 +70,8 @@ M0 + M1 已完成并**真机三设备联调验证**（底牌隔离、发牌流�
 - 公牌桌在**摊牌前**看不到任何底牌；玩家只能看到**自己的**底牌。
 - 摊牌时只揭示**未弃牌**玩家。
 - 玩家身份用随机 `token`（入座时下发，WS 连接时校验），不设账号密码。
+- 公牌桌控制面用 `host_token` 鉴权（创建时下发，WS 连接时校验）；`pin` 仅用于换设备时换取
+  host_token，且只下发给公牌桌（见 D12）。
 - 洗牌必须用 `secrets.SystemRandom`（测试可注入 `random.Random(seed)`）。
 
 ## 代码约定

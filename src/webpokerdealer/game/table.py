@@ -22,6 +22,11 @@ class GameError(Exception):
     """Raised for illegal actions (full table, dealing out of turn, ...)."""
 
 
+def _new_pin() -> str:
+    """A 4-digit host PIN (leading zeros allowed)."""
+    return "".join(secrets.choice("0123456789") for _ in range(4))
+
+
 class Street(str, Enum):
     WAITING = "waiting"
     PREFLOP = "preflop"
@@ -81,6 +86,11 @@ class Table:
         self.code = code
         self.rng = rng
         self.max_seats = max_seats if max_seats is not None else settings.max_seats
+        # Host authentication (D12): the board page is a control surface, so it
+        # must prove it is the host. The PIN is the human-friendly secret; the
+        # token is what the host device stores and sends over the WebSocket.
+        self.pin = _new_pin()
+        self.host_token = secrets.token_urlsafe(24)
         self.players: dict[str, Player] = {}
         self._seats: dict[int, str] = {}
         self.button_seat: int | None = None
@@ -160,6 +170,14 @@ class Table:
             if secrets.compare_digest(player.token, token):
                 return player
         return None
+
+    def verify_pin(self, pin: str) -> bool:
+        """True if ``pin`` unlocks host (board) control for this table."""
+        return bool(pin) and secrets.compare_digest(self.pin, pin)
+
+    def verify_host_token(self, token: str) -> bool:
+        """True if ``token`` is this table's host token."""
+        return bool(token) and secrets.compare_digest(self.host_token, token)
 
     def _next_free_seat(self) -> int:
         for seat in range(self.max_seats):
@@ -363,8 +381,14 @@ class Table:
         }
 
     def board_state(self) -> dict[str, Any]:
-        """The shared/board view: community cards and public player info."""
-        return self._common_state()
+        """The shared/board view: community cards and public player info.
+
+        Only ever sent to an authenticated host connection, so it can also carry
+        the PIN (the host device shows it for recovery on another device).
+        """
+        state = self._common_state()
+        state["pin"] = self.pin
+        return state
 
     def player_state(self, player_id: str) -> dict[str, Any]:
         """The private view for one player: everything public plus own hole cards."""

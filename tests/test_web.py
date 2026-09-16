@@ -5,10 +5,21 @@ from webpokerdealer.main import app
 client = TestClient(app)
 
 
+# Host tokens are only returned when a table is created, so stash them here to
+# authenticate board WebSocket connections in tests.
+_HOST_TOKENS: dict[str, str] = {}
+
+
 def create_table() -> str:
     res = client.post("/api/tables")
     assert res.status_code == 200
-    return res.json()["code"]
+    data = res.json()
+    _HOST_TOKENS[data["code"]] = data["host_token"]
+    return data["code"]
+
+
+def board_url(code: str) -> str:
+    return f"/ws/{code}?role=board&token={_HOST_TOKENS[code]}"
 
 
 def join(code: str, name: str) -> dict:
@@ -39,6 +50,53 @@ def test_create_and_open_board_page():
 
 def test_board_page_unknown_table_is_404():
     assert client.get("/board/ZZZZ").status_code == 404
+
+
+def test_create_table_returns_pin_and_host_token():
+    data = client.post("/api/tables").json()
+    assert len(data["pin"]) == 4 and data["pin"].isdigit()
+    assert data["host_token"]
+
+
+def test_host_auth_exchanges_correct_pin_for_token():
+    data = client.post("/api/tables").json()
+    res = client.post(f"/api/tables/{data['code']}/host", json={"pin": data["pin"]})
+    assert res.status_code == 200
+    assert res.json()["host_token"] == data["host_token"]
+
+
+def test_host_auth_rejects_wrong_pin():
+    data = client.post("/api/tables").json()
+    wrong = ("0" if data["pin"][0] != "0" else "1") + data["pin"][1:]
+    res = client.post(f"/api/tables/{data['code']}/host", json={"pin": wrong})
+    assert res.status_code == 403
+
+
+def test_board_websocket_requires_host_token():
+    code = create_table()
+    join(code, "Alice")
+    with client.websocket_connect(f"/ws/{code}?role=board") as ws:
+        message = ws.receive_json()
+        assert message["type"] == "error"
+        assert message["reason"] == "bad_host"
+
+
+def test_board_websocket_rejects_wrong_host_token():
+    code = create_table()
+    with client.websocket_connect(f"/ws/{code}?role=board&token=nope") as ws:
+        assert ws.receive_json()["reason"] == "bad_host"
+
+
+def test_pin_is_only_sent_to_the_board():
+    code = create_table()
+    alice = join(code, "Alice")
+    join(code, "Bob")
+    with client.websocket_connect(board_url(code)) as board:
+        board_state = board.receive_json()["state"]
+        assert len(board_state["pin"]) == 4
+    with client.websocket_connect(f"/ws/{code}?role=player&token={alice['token']}") as ws:
+        player_state = ws.receive_json()["state"]
+        assert "pin" not in player_state
 
 
 def test_join_rejects_blank_name():
@@ -73,7 +131,7 @@ def test_board_websocket_start_hand_flow():
     join(code, "Alice")
     join(code, "Bob")
 
-    with client.websocket_connect(f"/ws/{code}?role=board") as ws:
+    with client.websocket_connect(board_url(code)) as ws:
         state = ws.receive_json()
         assert state["type"] == "state"
         assert state["role"] == "board"
@@ -97,7 +155,7 @@ def test_board_showdown_is_a_separate_action():
     join(code, "Alice")
     join(code, "Bob")
 
-    with client.websocket_connect(f"/ws/{code}?role=board") as ws:
+    with client.websocket_connect(board_url(code)) as ws:
         ws.receive_json()
         ws.send_json({"type": "action", "action": "start_hand"})
         ws.receive_json()
@@ -122,7 +180,7 @@ def test_board_can_start_next_hand_mid_hand():
     join(code, "Alice")
     join(code, "Bob")
 
-    with client.websocket_connect(f"/ws/{code}?role=board") as ws:
+    with client.websocket_connect(board_url(code)) as ws:
         ws.receive_json()
         ws.send_json({"type": "action", "action": "start_hand"})
         ws.receive_json()
@@ -142,7 +200,7 @@ def test_board_can_reorder_seats():
     alice = join(code, "Alice")
     join(code, "Bob")
 
-    with client.websocket_connect(f"/ws/{code}?role=board") as ws:
+    with client.websocket_connect(board_url(code)) as ws:
         ws.receive_json()
         ws.send_json(
             {"type": "action", "action": "move_player", "player_id": alice["player_id"], "direction": "down"}
@@ -162,7 +220,7 @@ def test_player_websocket_receives_own_hole_cards_only():
         assert initial["state"]["you"]["name"] == "Alice"
 
         # Board deals while the player is connected.
-        with client.websocket_connect(f"/ws/{code}?role=board") as board:
+        with client.websocket_connect(board_url(code)) as board:
             board.receive_json()
             board.send_json({"type": "action", "action": "start_hand"})
             board.receive_json()
@@ -202,7 +260,7 @@ def test_player_can_fold_over_websocket():
     alice = join(code, "Alice")
     join(code, "Bob")
 
-    with client.websocket_connect(f"/ws/{code}?role=board") as board:
+    with client.websocket_connect(board_url(code)) as board:
         board.receive_json()
         board.send_json({"type": "action", "action": "start_hand"})
         board.receive_json()

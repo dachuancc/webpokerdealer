@@ -27,6 +27,10 @@ class JoinRequest(BaseModel):
     name: str = Field(min_length=1, max_length=16)
 
 
+class HostAuthRequest(BaseModel):
+    pin: str = Field(min_length=1, max_length=12)
+
+
 def _require_table(code: str):
     table = rooms.get(code)
     if table is None:
@@ -61,7 +65,18 @@ async def index(request: Request) -> HTMLResponse:
 @router.post("/api/tables")
 async def create_table() -> dict[str, str]:
     table = rooms.create()
-    return {"code": table.code}
+    # The creator is the host: hand back the PIN (to show/recover) and the token
+    # the board page stores locally.
+    return {"code": table.code, "pin": table.pin, "host_token": table.host_token}
+
+
+@router.post("/api/tables/{code}/host")
+async def host_auth(code: str, body: HostAuthRequest) -> dict[str, str]:
+    """Exchange the host PIN for the host token (used by the board page)."""
+    table = _require_table(code)
+    if not table.verify_pin(body.pin):
+        raise HTTPException(status_code=403, detail="PIN 不正确")
+    return {"host_token": table.host_token}
 
 
 @router.post("/api/tables/{code}/join")
