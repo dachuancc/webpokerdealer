@@ -42,6 +42,13 @@ settingsPanel.addEventListener("click", (event) => {
 
 function render(state) {
   const me = state.you;
+  const avatarSlot = qs("#player-avatar");
+  if (me) {
+    avatarSlot.replaceChildren(avatarEl(me.name, me.seat, { size: "md" }));
+    document.body.style.setProperty("--seat-color", seatColor(me.seat));
+  } else {
+    avatarSlot.replaceChildren();
+  }
   qs("#player-name").textContent = me ? me.name : "—";
   qs("#player-pos").textContent = me ? positionLabel(me) : "";
   qs("#street-label").textContent = state.street_label;

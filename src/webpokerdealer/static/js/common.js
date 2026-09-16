@@ -139,6 +139,33 @@ function connectWS(path, { onState, onError, onNotice, onOpen, onStatus } = {}) 
   };
 }
 
+/* Seat identity: a stable colour per seat + an initials avatar, so the same
+ * player is recognisable on the board and on their own phone. */
+const SEAT_COLORS = [
+  "#e8c46a", // gold
+  "#6ab0e8", // sky
+  "#e88a6a", // coral
+  "#7fd67f", // green
+  "#b58ce8", // violet
+  "#e86ab0", // pink
+  "#5fd0c8", // teal
+  "#f0a35e", // amber
+  "#a8c0ff", // periwinkle
+];
+
+function seatColor(seat) {
+  const n = SEAT_COLORS.length;
+  return SEAT_COLORS[((seat % n) + n) % n];
+}
+
+function avatarEl(name, seat, { size = "md" } = {}) {
+  const trimmed = (name || "?").trim();
+  const initial = trimmed ? Array.from(trimmed)[0] : "?";
+  const node = el("span", `avatar avatar--${size}`, initial);
+  node.style.setProperty("--seat-color", seatColor(seat));
+  return node;
+}
+
 function positionLabel(player) {
   const parts = [];
   if (player.is_dealer) parts.push("D");

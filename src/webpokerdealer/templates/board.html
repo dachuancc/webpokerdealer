@@ -4,6 +4,7 @@
 {% block body_attrs %}data-code="{{ code }}"{% endblock %}
 {% block content %}
 <main class="board">
+  <div class="board__head-wrap">
   <header class="board__top">
     <div class="board__code">
       <span class="muted">牌桌号</span>
@@ -27,13 +28,17 @@
     <span id="board-alert-text"></span>
     <button id="board-alert-close" class="icon-btn" aria-label="关闭提醒">✕</button>
   </div>
+  </div>
 
   <section class="felt">
     <div id="community" class="community" aria-label="公共牌"></div>
     <p id="community-hint" class="community-hint muted">点击下方「开始本局」发牌</p>
   </section>
 
-  <section id="seats" class="seats" aria-label="座位"></section>
+  <div class="seats-wrap">
+    <p class="seats-hint muted small">座位号按就座顺序（顺时针），与实体座位一一对应</p>
+    <section id="seats" class="seats" aria-label="座位"></section>
+  </div>
 
   <footer class="board__controls">
     <button id="start-btn" class="btn btn--primary">开始本局</button>

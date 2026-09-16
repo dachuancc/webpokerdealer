@@ -50,13 +50,15 @@ function renderSeats(state) {
   }
   players.forEach((player) => {
     const seat = el("div", "seat");
+    seat.style.setProperty("--seat-color", seatColor(player.seat));
     if (!player.connected) seat.classList.add("seat--offline");
     if (player.folded) seat.classList.add("seat--folded");
 
     const head = el("div", "seat__head");
+    head.appendChild(avatarEl(player.name, player.seat, { size: "sm" }));
+    head.appendChild(el("span", "seat__name", player.name));
     const dot = el("span", `seat__dot${player.connected ? " seat__dot--on" : ""}`);
     head.appendChild(dot);
-    head.appendChild(el("span", "seat__name", player.name));
     seat.appendChild(head);
 
     const info = el("div", "seat__info");
@@ -143,6 +145,8 @@ function renderOrder(state) {
   }
   players.forEach((player, index) => {
     const row = el("div", "order-row");
+    row.style.setProperty("--seat-color", seatColor(player.seat));
+    row.appendChild(avatarEl(player.name, player.seat, { size: "xs" }));
     row.appendChild(el("span", "order-row__name", `${index + 1}. ${player.name}`));
     row.appendChild(posBadges(player));
 
@@ -171,6 +175,8 @@ function renderOrder(state) {
 
 function historyPlayerLine(player) {
   const line = el("div", "history-player");
+  line.style.setProperty("--seat-color", seatColor(player.seat));
+  line.appendChild(avatarEl(player.name, player.seat, { size: "xs" }));
   const name = el("span", "history-player__name", player.name);
   if (player.folded) name.classList.add("history-player__name--folded");
   line.appendChild(name);
