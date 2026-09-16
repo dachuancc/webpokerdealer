@@ -361,7 +361,7 @@ settingsPanel.addEventListener("click", (event) => {
 const COMMUNITY_SIZE_KEY = "wpd:community-size";
 const DEFAULT_COMMUNITY_SIZE = 112;
 const COMMUNITY_MIN = 64;
-const COMMUNITY_MAX = 320;
+const COMMUNITY_MAX = 400;
 const communitySizeInput = qs("#community-size");
 const communitySizeValue = qs("#community-size-value");
 
@@ -397,6 +397,11 @@ function initCommunitySize() {
     applyCommunitySize(parseInt(communitySizeInput.value, 10) || DEFAULT_COMMUNITY_SIZE);
   });
 }
+
+qs("#community-size-max").addEventListener("click", () => {
+  applyCommunitySize(COMMUNITY_MAX);
+  localStorage.setItem(COMMUNITY_SIZE_KEY, communitySizeInput.value);
+});
 
 const soundToggle = qs("#sound-toggle");
 soundToggle.checked = sfx.enabled();
