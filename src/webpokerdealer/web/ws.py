@@ -67,6 +67,18 @@ class Hub:
                 # A dead socket must not break the broadcast to everyone else.
                 self.remove(conn)
 
+    async def notify_other_boards(self, conn: Connection, message: str) -> None:
+        """Warn existing board connections that another host device connected."""
+        for other in list(self._rooms.get(conn.code, ())):
+            if other is conn or other.role != "board":
+                continue
+            try:
+                await other.ws.send_json(
+                    {"type": "notice", "kind": "board_joined", "message": message}
+                )
+            except Exception:
+                self.remove(other)
+
 
 hub = Hub()
 
@@ -159,6 +171,9 @@ async def ws_endpoint(ws: WebSocket, code: str) -> None:
     # Broadcast also delivers the initial state to this connection, so every
     # client gets exactly one state per change.
     hub.add(conn)
+    if conn.role == "board":
+        # A second control device is worth flagging: the PIN may have leaked.
+        await hub.notify_other_boards(conn, "⚠️ 另一台设备以主持人身份打开了公牌桌")
     await hub.broadcast(table)
 
     try:

@@ -87,6 +87,21 @@ def test_board_websocket_rejects_wrong_host_token():
         assert ws.receive_json()["reason"] == "bad_host"
 
 
+def test_second_board_connection_notifies_the_first():
+    code = create_table()
+    join(code, "Alice")
+    join(code, "Bob")
+    with client.websocket_connect(board_url(code)) as first:
+        first.receive_json()  # initial state
+        with client.websocket_connect(board_url(code)) as second:
+            second.receive_json()  # the second board's initial state
+            notice = first.receive_json()
+            assert notice["type"] == "notice"
+            assert notice["kind"] == "board_joined"
+            # The first board still receives the normal state broadcast too.
+            assert first.receive_json()["type"] == "state"
+
+
 def test_pin_is_only_sent_to_the_board():
     code = create_table()
     alice = join(code, "Alice")

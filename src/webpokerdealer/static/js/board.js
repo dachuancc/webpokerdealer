@@ -210,10 +210,29 @@ function renderHistory(state) {
 }
 
 function renderSettings(state) {
-  qs("#host-pin-view").textContent = state.pin || "—";
+  renderPin(state);
   renderOrder(state);
   renderHistory(state);
 }
+
+let pinVisible = false;
+
+function renderPin(state) {
+  const view = qs("#host-pin-view");
+  const toggle = qs("#host-pin-toggle");
+  if (pinVisible && state.pin) {
+    view.textContent = state.pin;
+    toggle.textContent = "隐藏 PIN";
+  } else {
+    view.textContent = "••••";
+    toggle.textContent = "查看 PIN";
+  }
+}
+
+qs("#host-pin-toggle").addEventListener("click", () => {
+  pinVisible = !pinVisible;
+  if (lastState) renderPin(lastState);
+});
 
 function openSettings() {
   settingsPanel.hidden = false;
@@ -221,7 +240,19 @@ function openSettings() {
 }
 function closeSettings() {
   settingsPanel.hidden = true;
+  pinVisible = false; // hide again next time the panel opens
 }
+
+/* --------------------------------------------------------------- board alert */
+
+function showBoardAlert(message) {
+  qs("#board-alert-text").textContent = message;
+  qs("#board-alert").hidden = false;
+}
+
+qs("#board-alert-close").addEventListener("click", () => {
+  qs("#board-alert").hidden = true;
+});
 
 /* ------------------------------------------------------- host authentication */
 
@@ -275,6 +306,11 @@ function connectBoard(token) {
     `/ws/${code}?role=board&token=${encodeURIComponent(token)}`,
     {
       onState: render,
+      onNotice: (msg) => {
+        const text = msg.message || "有另一台设备打开了公牌桌";
+        showBoardAlert(text);
+        toast(text);
+      },
       onError: (message, reason) => {
         if (reason === "table_missing") fatalTableGone(message);
         else if (reason === "bad_host") {

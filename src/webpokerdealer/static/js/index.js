@@ -12,16 +12,11 @@ qs("#create-btn").addEventListener("click", async (event) => {
     if (!res.ok) throw new Error("创建失败");
     const data = await res.json();
     // Remember host control so the board page doesn't ask for the PIN again.
+    // (The PIN itself is only shown inside the board's settings, on demand.)
     localStorage.setItem(HOST_KEY(data.code), data.host_token);
-    // Show the code + PIN before entering, so the host can note the PIN down.
-    qs("#created-code").textContent = data.code;
-    qs("#created-pin").textContent = data.pin;
-    qs("#enter-board").href = `/board/${data.code}`;
-    qs("#created").hidden = false;
-    qs("#created").scrollIntoView({ behavior: "smooth", block: "nearest" });
+    location.href = `/board/${data.code}`;
   } catch (err) {
     toast(err.message || "创建失败");
-  } finally {
     button.disabled = false;
   }
 });

@@ -153,19 +153,6 @@ button, input { font: inherit; }
 .home__header h1 { margin: 0 0 6px; font-size: 1.5rem; }
 .home__foot { text-align: center; margin-top: 24px; }
 
-.created { border-color: rgba(232, 196, 106, .5); }
-.created__row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 8px 0;
-  border-bottom: 1px solid rgba(255, 255, 255, .08);
-}
-.created__code { font-size: 1.5rem; letter-spacing: .14em; color: var(--gold); }
-.created a.btn { margin-top: 14px; }
-a.btn { display: block; text-align: center; text-decoration: none; }
-
 /* ------------------------------------------------------------------- board */
 
 .page-board { overflow: hidden; }
@@ -279,6 +266,21 @@ a.btn { display: block; text-align: center; text-decoration: none; }
   letter-spacing: .22em;
   font-variant-numeric: tabular-nums;
 }
+.pin-reveal { display: flex; align-items: center; gap: 12px; margin-top: 6px; }
+
+.alert {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  background: rgba(232, 196, 106, .18);
+  border: 1px solid rgba(232, 196, 106, .5);
+  color: var(--gold);
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-weight: 600;
+}
+.alert[hidden] { display: none; }
 .modal__panel {
   width: min(560px, 100%);
   background: #0e3529;

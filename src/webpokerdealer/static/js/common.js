@@ -67,7 +67,7 @@ function setConn(node, status) {
  * Open a WebSocket and wire it to callbacks, reconnecting with backoff.
  * `path` is e.g. `/ws/AB3K?role=board`.
  */
-function connectWS(path, { onState, onError, onOpen, onStatus } = {}) {
+function connectWS(path, { onState, onError, onNotice, onOpen, onStatus } = {}) {
   const proto = location.protocol === "https:" ? "wss" : "ws";
   let attempt = 0;
   let socket = null;
@@ -104,6 +104,7 @@ function connectWS(path, { onState, onError, onOpen, onStatus } = {}) {
       try { msg = JSON.parse(event.data); } catch { return; }
       if (msg.type === "state" && onState) onState(msg.state, msg.role);
       else if (msg.type === "error" && onError) onError(msg.message, msg.reason);
+      else if (msg.type === "notice" && onNotice) onNotice(msg);
     });
 
     // A failed handshake fires `error` and then `close`; let `close` own the

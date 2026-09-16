@@ -23,6 +23,11 @@
     <button id="settings-btn" class="icon-btn" title="牌桌设置" aria-label="牌桌设置">⚙️</button>
   </header>
 
+  <div id="board-alert" class="alert" hidden role="alert">
+    <span id="board-alert-text"></span>
+    <button id="board-alert-close" class="icon-btn" aria-label="关闭提醒">✕</button>
+  </div>
+
   <section class="felt">
     <div id="community" class="community" aria-label="公共牌"></div>
     <p id="community-hint" class="community-hint muted">点击下方「开始本局」发牌</p>
@@ -63,7 +68,11 @@
 
     <section class="modal__section">
       <h3>主持人</h3>
-      <p class="muted small">换设备时用它验证：<strong id="host-pin-view" class="pin">—</strong></p>
+      <p class="muted small">换设备打开公牌桌时需要输入此 PIN。</p>
+      <div class="pin-reveal">
+        <strong id="host-pin-view" class="pin">••••</strong>
+        <button id="host-pin-toggle" class="btn small" type="button">查看 PIN</button>
+      </div>
     </section>
 
     <section class="modal__section">
