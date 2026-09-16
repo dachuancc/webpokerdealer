@@ -10,6 +10,7 @@
 <body class="{% block body_class %}{% endblock %}" {% block body_attrs %}{% endblock %}>
   {% block content %}{% endblock %}
   <div id="toast" class="toast" hidden></div>
+  <div id="card-zoom" class="card-zoom" hidden aria-label="放大的牌"></div>
   <script src="/static/js/common.js?v={{ asset_v }}"></script>
   {% block scripts %}{% endblock %}
 </body>

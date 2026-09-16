@@ -183,6 +183,30 @@ function positionLabel(player) {
   return parts.join(" / ");
 }
 
+/* Tap/click any face-up card to show a big, readable copy of it.
+ * Works on the board and on the player's phone. Click anywhere to dismiss. */
+function initCardZoom() {
+  const overlay = qs("#card-zoom");
+  if (!overlay) return;
+  document.addEventListener("click", (event) => {
+    if (!overlay.hidden) {
+      overlay.hidden = true;
+      return;
+    }
+    const card = event.target.closest(".card");
+    if (!card || card.classList.contains("card--empty") || card.classList.contains("card--back")) {
+      return;
+    }
+    const big = card.cloneNode(true);
+    big.classList.remove("card--sm", "card--xs", "card--lg");
+    big.classList.add("card--xl");
+    overlay.replaceChildren(big);
+    overlay.hidden = false;
+  });
+}
+
+initCardZoom();
+
 function action(name, extra = {}) {
   return { type: "action", action: name, ...extra };
 }

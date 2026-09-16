@@ -63,6 +63,7 @@ button, input { font: inherit; }
 .card--sm { --w: 34px; }
 .card--xs { --w: 20px; }
 .card--lg { --w: 112px; }
+.card--xl { --w: min(62vw, 240px); }
 
 /* Deal / flip animation for newly revealed cards. */
 .community, .hole { perspective: 800px; }
@@ -176,6 +177,19 @@ button, input { font: inherit; }
   z-index: 50;
 }
 
+/* Tap a card to enlarge it. */
+.card-zoom {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(0, 0, 0, .78);
+}
+.card-zoom[hidden] { display: none; }
+
 /* -------------------------------------------------------------------- home */
 
 .home { max-width: 520px; margin: 0 auto; padding: 26px 18px 40px; }
@@ -217,7 +231,7 @@ button, input { font: inherit; }
 }
 .community { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; }
 .community .card { --w: 112px; }
-.community--sm .card { --w: 40px; }
+.community--sm .card { --w: 52px; }
 
 .seats-wrap { display: grid; gap: 6px; }
 .seats-hint { margin: 0; }
@@ -383,4 +397,29 @@ button, input { font: inherit; }
 
 @media (prefers-reduced-motion: reduce) {
   .card--deal { animation: none; }
+}
+
+/* ------------------------------------------ one-handed phone (landscape) */
+
+/* Hold the phone sideways: put the hole cards and the board side by side and
+ * keep the action buttons along the bottom, within thumb reach. */
+@media (orientation: landscape) and (max-height: 600px) {
+  .player { max-width: none; padding: 8px 14px 14px; }
+  .join-view { margin-top: 6vh; }
+  #play-view:not([hidden]) {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    grid-template-areas:
+      "top     top"
+      "hand    board"
+      "actions actions";
+    align-items: center;
+    gap: 6px 16px;
+  }
+  .player__top { grid-area: top; margin-bottom: 0; }
+  .player__hand { grid-area: hand; margin-bottom: 0; }
+  .player__board { grid-area: board; margin-bottom: 0; }
+  .player__actions { grid-area: actions; grid-template-columns: 1fr 1fr; }
+  .hole .card { --w: 84px; }
+  .community--sm .card { --w: 52px; }
 }
