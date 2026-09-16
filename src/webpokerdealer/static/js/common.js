@@ -31,10 +31,19 @@ function cardEl(card, { faceDown = false, size = "" } = {}) {
   return node;
 }
 
-/** Render an array of cards into a container, padding with empty slots. */
-function renderCards(container, cards, { size = "", slots = null } = {}) {
+/** Render an array of cards into a container, padding with empty slots.
+ * Newly appended cards (beyond what was already shown) animate in. */
+function renderCards(container, cards, { size = "", slots = null, animate = true } = {}) {
+  const prevCount = container.querySelectorAll(".card:not(.card--empty)").length;
   container.replaceChildren();
-  (cards || []).forEach((card) => container.appendChild(cardEl(card, { size })));
+  (cards || []).forEach((card, index) => {
+    const node = cardEl(card, { size });
+    if (animate && index >= prevCount) {
+      node.classList.add("card--deal");
+      node.style.animationDelay = `${Math.min(index - prevCount, 4) * 70}ms`;
+    }
+    container.appendChild(node);
+  });
   if (slots !== null) {
     for (let i = (cards || []).length; i < slots; i += 1) {
       container.appendChild(cardEl(null, { size }));
@@ -177,3 +186,62 @@ function positionLabel(player) {
 function action(name, extra = {}) {
   return { type: "action", action: name, ...extra };
 }
+
+/* ------------------------------------------------------------------- sound */
+
+/* Tiny WebAudio sound effects: no asset files, no build step. Browsers block
+ * audio until a user gesture, so we unlock the context on the first pointerdown
+ * and every sound on the board follows a tap anyway. */
+const sfx = (() => {
+  const KEY = "wpd:sound";
+  let ctx = null;
+
+  function enabled() {
+    return localStorage.getItem(KEY) !== "0";
+  }
+  function setEnabled(value) {
+    localStorage.setItem(KEY, value ? "1" : "0");
+  }
+  function unlock() {
+    if (!ctx) {
+      const AC = window.AudioContext || window.webkitAudioContext;
+      if (!AC) return null;
+      ctx = new AC();
+    }
+    if (ctx.state === "suspended") ctx.resume();
+    return ctx;
+  }
+  function blip({ freq, type = "triangle", dur = 0.09, gain = 0.06, dropTo = 0 }) {
+    if (!enabled()) return;
+    const c = unlock();
+    if (!c) return;
+    const t = c.currentTime;
+    const osc = c.createOscillator();
+    const g = c.createGain();
+    osc.type = type;
+    osc.frequency.setValueAtTime(freq, t);
+    if (dropTo) osc.frequency.exponentialRampToValueAtTime(dropTo, t + dur);
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(gain, t + 0.008);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    osc.connect(g);
+    g.connect(c.destination);
+    osc.start(t);
+    osc.stop(t + dur + 0.02);
+  }
+
+  return {
+    enabled,
+    setEnabled,
+    unlock,
+    deal() { blip({ freq: 540, dropTo: 300, dur: 0.1, gain: 0.05 }); },
+    flip() { blip({ freq: 320, type: "square", dur: 0.07, gain: 0.04 }); },
+    reveal() {
+      blip({ freq: 700, dur: 0.1, gain: 0.05 });
+      setTimeout(() => blip({ freq: 1000, dur: 0.12, gain: 0.05 }), 90);
+    },
+  };
+})();
+
+// Unlock the audio context on the first interaction so later sounds can play.
+window.addEventListener("pointerdown", () => sfx.unlock(), { once: true });

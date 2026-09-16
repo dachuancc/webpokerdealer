@@ -64,6 +64,14 @@ button, input { font: inherit; }
 .card--xs { --w: 20px; }
 .card--lg { --w: 112px; }
 
+/* Deal / flip animation for newly revealed cards. */
+.community, .hole { perspective: 800px; }
+@keyframes card-deal {
+  from { opacity: 0; transform: translateY(-22px) rotateY(-85deg) scale(.9); }
+  to { opacity: 1; transform: none; }
+}
+.card--deal { animation: card-deal .4s cubic-bezier(.2, .7, .3, 1) both; }
+
 /* ------------------------------------------------------------------ layout */
 
 .panel {
@@ -360,3 +368,19 @@ button, input { font: inherit; }
 .toggle input { width: 20px; height: 20px; }
 
 .player__top-right { display: flex; align-items: center; gap: 8px; }
+
+/* -------------------------------------------------------- tablet landscape */
+
+/* The board lives on a landscape tablet: tighten vertical rhythm so the felt,
+ * seats and controls all fit without scrolling. */
+@media (min-aspect-ratio: 5/4) {
+  .board { gap: 8px; padding: 10px; }
+  .felt { min-height: 150px; padding: 14px; }
+  .community .card { --w: 100px; }
+  .seat { min-height: 88px; }
+  .board__controls .btn { padding: 12px 18px; font-size: 1rem; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .card--deal { animation: none; }
+}

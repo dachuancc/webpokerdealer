@@ -111,7 +111,15 @@ function renderControls(state) {
   showdownBtn.disabled = !live;
 }
 
+/** Play a sound only when the state actually changed (not on every broadcast). */
+function detectSounds(prev, next) {
+  if (next.hand_number > prev.hand_number) sfx.deal();
+  if ((next.community || []).length > (prev.community || []).length) sfx.flip();
+  if (prev.street !== "showdown" && next.street === "showdown") sfx.reveal();
+}
+
 function render(state) {
+  if (lastState) detectSounds(lastState, state);
   lastState = state;
   qs("#board-code").textContent = state.code;
   qs("#street-label").textContent = state.street_label;
@@ -349,6 +357,10 @@ qs("#settings-close").addEventListener("click", closeSettings);
 settingsPanel.addEventListener("click", (event) => {
   if (event.target === settingsPanel) closeSettings();
 });
+
+const soundToggle = qs("#sound-toggle");
+soundToggle.checked = sfx.enabled();
+soundToggle.addEventListener("change", () => sfx.setEnabled(soundToggle.checked));
 
 qs("#reset-btn").addEventListener("click", () => {
   if (confirm("重置牌桌会清空所有玩家与牌局历史，确定吗？")) socket.send(action("reset"));
