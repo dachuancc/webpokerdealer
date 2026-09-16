@@ -25,8 +25,14 @@ function cardEl(card, { faceDown = false, size = "" } = {}) {
   }
   classes.push(`card--suit-${card.suit}`);
   const node = el("div", classes.join(" "));
-  node.appendChild(el("span", "card__rank", card.label));
-  node.appendChild(el("span", "card__suit", card.symbol));
+  if (activeDeck) {
+    // Image deck: paint the face from a file instead of drawing rank + suit.
+    node.classList.add("card--art");
+    node.style.backgroundImage = `url("${activeDeck.dir}${card.code}${activeDeck.ext}")`;
+  } else {
+    node.appendChild(el("span", "card__rank", card.label));
+    node.appendChild(el("span", "card__suit", card.symbol));
+  }
   node.title = card.code;
   return node;
 }
@@ -205,14 +211,38 @@ const APPEARANCE_KEYS = {
   theme: "wpd:theme",
   cardBack: "wpd:card-back",
   fourColor: "wpd:four-color",
+  deck: "wpd:deck",
 };
+
+// Image card decks loaded from /static/cards/decks.json (see that folder's README).
+const DECK_MANIFEST_URL = "/static/cards/decks.json";
+let DECK_MANIFEST = {};
+let activeDeck = null;
 
 function appearanceState() {
   return {
     theme: localStorage.getItem(APPEARANCE_KEYS.theme) || "green",
     cardBack: localStorage.getItem(APPEARANCE_KEYS.cardBack) || "blue",
     fourColor: localStorage.getItem(APPEARANCE_KEYS.fourColor) === "1",
+    deck: localStorage.getItem(APPEARANCE_KEYS.deck) || "classic",
   };
+}
+
+function normalizeDecks(list) {
+  const map = {};
+  (Array.isArray(list) ? list : []).forEach((entry) => {
+    if (!entry || !entry.id || !entry.dir) return;
+    let ext = entry.ext || ".svg";
+    if (!ext.startsWith(".")) ext = `.${ext}`;
+    map[entry.id] = {
+      id: entry.id,
+      name: entry.name || entry.id,
+      dir: entry.dir.endsWith("/") ? entry.dir : `${entry.dir}/`,
+      ext,
+      back: entry.back || null,
+    };
+  });
+  return map;
 }
 
 function applyAppearance(state = appearanceState()) {
@@ -225,6 +255,15 @@ function applyAppearance(state = appearanceState()) {
   root.style.setProperty("--card-back", back.back);
   root.style.setProperty("--card-back-dark", back.dark);
   document.body.classList.toggle("deck-four-color", state.fourColor);
+
+  activeDeck = DECK_MANIFEST[state.deck] || null;
+  // A deck may bring its own card back; otherwise the built-in striped back is
+  // used (still themeable via the 牌背 colour swatches).
+  const backFile = activeDeck && activeDeck.back;
+  document.body.classList.toggle("deck-art", Boolean(backFile));
+  if (backFile) {
+    root.style.setProperty("--deck-back-image", `url("${activeDeck.dir}${backFile}")`);
+  }
 }
 
 function themeSwatchStyle(theme) {
@@ -247,7 +286,8 @@ function initAppearance() {
   const bgEl = qs("#bg-swatches");
   const backEl = qs("#cardback-swatches");
   const fourColorEl = qs("#four-color");
-  if (!bgEl && !backEl && !fourColorEl) return;
+  const deckEl = qs("#deck-select");
+  if (!bgEl && !backEl && !fourColorEl && !deckEl) return;
 
   function render() {
     const state = appearanceState();
@@ -282,9 +322,36 @@ function initAppearance() {
         applyAppearance();
       };
     }
+    if (deckEl) {
+      deckEl.replaceChildren();
+      const classic = el("option", "", "经典（内置）");
+      classic.value = "classic";
+      deckEl.appendChild(classic);
+      Object.values(DECK_MANIFEST).forEach((deck) => {
+        const option = el("option", "", deck.name);
+        option.value = deck.id;
+        deckEl.appendChild(option);
+      });
+      deckEl.value = DECK_MANIFEST[state.deck] ? state.deck : "classic";
+      deckEl.onchange = () => {
+        localStorage.setItem(APPEARANCE_KEYS.deck, deckEl.value);
+        applyAppearance();
+        // Cards already on screen bake the image in, so ask pages to redraw.
+        document.dispatchEvent(new CustomEvent("appearancechange"));
+      };
+    }
   }
 
   render();
+  fetch(DECK_MANIFEST_URL)
+    .then((res) => (res.ok ? res.json() : []))
+    .catch(() => [])
+    .then((list) => {
+      DECK_MANIFEST = normalizeDecks(list);
+      applyAppearance();
+      render();
+      document.dispatchEvent(new CustomEvent("appearancechange"));
+    });
 }
 
 /* Tap/click any face-up card to show a big, readable copy of it.

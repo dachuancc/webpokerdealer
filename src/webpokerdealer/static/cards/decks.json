@@ -1,0 +1,8 @@
+[
+  {
+    "id": "knoll",
+    "name": "经典矢量（Byron Knoll）",
+    "dir": "/static/cards/knoll/",
+    "ext": ".svg"
+  }
+]
