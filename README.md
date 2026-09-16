@@ -17,6 +17,13 @@ uv sync
 uv run uvicorn webpokerdealer.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
+> `--reload` 只用于开发：改代码会重启进程，而牌桌状态在内存中，**重启即清空**。
+> 实际和家人开玩时去掉它：
+> ```bash
+> uv run uvicorn webpokerdealer.main:app --host 0.0.0.0 --port 8000
+> ```
+> 手机 / 平板用 `http://<本机局域网IP>:8000` 访问。
+
 浏览器打开 `http://localhost:8000`：
 
 1. 点"创建牌桌" → 进入**公牌桌**页面（平板放桌子中间），页面会显示加入二维码。
@@ -27,8 +34,17 @@ uv run uvicorn webpokerdealer.main:app --reload --host 0.0.0.0 --port 8000
 ## 测试
 
 ```bash
-uv run pytest
+uv run pytest    # 基线 33 用例全绿
 ```
+
+## 开发提示
+
+- **前端无构建步骤**：改 `static/js/*.js` / `static/css/*.css` 后浏览器可能命中缓存，
+  需**强制刷新**（`Ctrl+Shift+R`）才看得到新代码。
+- **WebSocket 错误带 `reason`**（`table_missing` / `bad_token` / `game_error` / ...），
+  客户端据此决定是否继续重连（见 `docs/DECISIONS.md` D10）。
+- 服务端 `webpokerdealer` logger 会打印带时间戳的 `ws open/close/reject`，
+  排查连接问题直接看它。
 
 ## Docker 部署（NAS）
 

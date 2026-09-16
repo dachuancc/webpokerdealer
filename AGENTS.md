@@ -39,9 +39,29 @@ tests/                 # test_cards / test_table / test_web
 ```bash
 uv sync                                              # 安装依赖
 uv run uvicorn webpokerdealer.main:app --reload --host 0.0.0.0 --port 8000
-uv run pytest                                        # 跑测试（改动后必须全绿）
+uv run pytest                                        # 跑测试（改动后必须全绿，基线 33）
 docker compose up -d --build                         # 本地验证容器
 ```
+
+## 运行与调试
+
+- 开发：`uv run uvicorn webpokerdealer.main:app --reload --host 0.0.0.0 --port 8000`
+- 实际开玩：**去掉 `--reload`**（它会在改代码时重启进程，清空内存中的牌桌）
+- 手机/平板用 `http://<本机局域网IP>:8000` 访问；平板「创建牌桌」当公牌桌，手机扫码入座
+- 诊断连接：uvicorn 日志里带时间戳的 `ws open/close/reject`（`reason=...`）
+
+## 当前状态与下一步
+
+M0 + M1 已完成并**真机三设备联调验证**（底牌隔离、发牌流程、断线重连均正常）。
+下一步见 `docs/ROADMAP.md` 的「当前状态」；动手前先读 `docs/DECISIONS.md`。
+
+## 已知坑
+
+- **`--reload` 会清空牌局**：状态在内存（D2），代码一改就重启 → 牌桌/token 全失效。
+  客户端会收到 `reason=table_missing` 并停止重连、提示重新建桌。
+- **浏览器 JS 缓存**：无构建步骤，改 `static/js/*.js` 后必须**强制刷新**，否则跑的是旧代码。
+- **iPhone 手输 IP 常失败**：Safari 会把 `192.168.x.x:8000` 当搜索词。让玩家**扫码**，
+  或手动输入完整 `http://` 前缀。
 
 ## 核心不变量（改动务必守护）
 
