@@ -98,10 +98,21 @@ function render(state) {
   renderSeats(state);
 }
 
-const token = localStorage.getItem(`wpd:board:${code}`) || "";
+function fatalTableGone(message) {
+  if (socket) socket.close();
+  connBadge.textContent = "牌桌已失效";
+  connBadge.className = "badge badge--warn";
+  startBtn.disabled = true;
+  nextBtn.disabled = true;
+  seatsEl.replaceChildren(el("p", "muted", `${message} 请回首页重新创建牌桌。`));
+}
+
 socket = connectWS(`/ws/${code}?role=board`, {
   onState: render,
-  onError: (message) => toast(message),
+  onError: (message, reason) => {
+    toast(message);
+    if (reason === "table_missing") fatalTableGone(message);
+  },
   onStatus: (status) => setConn(connBadge, status),
 });
 

@@ -11,6 +11,7 @@ leave the server except to their owner (and at showdown, to everyone).
 
 from __future__ import annotations
 
+import logging
 from typing import Any
 
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
@@ -19,6 +20,12 @@ from ..game.rooms import rooms
 from ..game.table import GameError, Table
 
 router = APIRouter()
+logger = logging.getLogger("webpokerdealer.ws")
+
+
+def _peer(ws: WebSocket) -> str:
+    client = ws.client
+    return f"{client.host}:{client.port}" if client else "?"
 
 
 class Connection:
@@ -64,8 +71,8 @@ class Hub:
 hub = Hub()
 
 
-def _error(message: str) -> dict[str, Any]:
-    return {"type": "error", "message": message}
+def _error(message: str, reason: str = "error") -> dict[str, Any]:
+    return {"type": "error", "message": message, "reason": reason}
 
 
 async def _handle_message(conn: Connection, table: Table, msg: dict[str, Any]) -> None:
@@ -110,7 +117,8 @@ async def ws_endpoint(ws: WebSocket, code: str) -> None:
     await ws.accept()
     table = rooms.get(code)
     if table is None:
-        await ws.send_json(_error("牌桌不存在或已过期"))
+        logger.info("ws reject %s code=%s reason=table-missing", _peer(ws), code)
+        await ws.send_json(_error("牌桌不存在或已过期", "table_missing"))
         await ws.close()
         return
 
@@ -122,12 +130,20 @@ async def ws_endpoint(ws: WebSocket, code: str) -> None:
     if conn.role == "player":
         player = table.find_by_token(ws.query_params.get("token", ""))
         if player is None:
-            await ws.send_json(_error("身份校验失败，请重新入座"))
+            logger.info("ws reject %s code=%s reason=bad-token", _peer(ws), table.code)
+            await ws.send_json(_error("身份校验失败，请重新入座", "bad_token"))
             await ws.close()
             return
         conn.player_id = player.id
         player.connected = True
 
+    logger.info(
+        "ws open %s code=%s role=%s player=%s",
+        _peer(ws),
+        conn.code,
+        conn.role,
+        conn.player_id or "-",
+    )
     # Broadcast also delivers the initial state to this connection, so every
     # client gets exactly one state per change.
     hub.add(conn)
@@ -148,4 +164,11 @@ async def ws_endpoint(ws: WebSocket, code: str) -> None:
             if player is not None:
                 player.connected = False
         hub.remove(conn)
+        logger.info(
+            "ws close %s code=%s role=%s player=%s",
+            _peer(ws),
+            conn.code,
+            conn.role,
+            conn.player_id or "-",
+        )
         await hub.broadcast(table)

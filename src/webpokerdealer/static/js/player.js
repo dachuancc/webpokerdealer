@@ -53,9 +53,12 @@ function startPlaying(token) {
       playerId = state.you ? state.you.id : playerId;
       render(state);
     },
-    onError: (message) => {
+    onError: (message, reason) => {
       toast(message);
-      if (message.includes("身份") || message.includes("牌桌")) {
+      if (reason === "bad_token" || reason === "table_missing") {
+        // The server rejected this connection for good; stop reconnecting and
+        // let the player join again instead of looping forever.
+        if (socket) socket.close();
         setTimeout(fallbackToJoin, 400);
       }
     },

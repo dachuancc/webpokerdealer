@@ -72,32 +72,49 @@ function connectWS(path, { onState, onError, onOpen, onStatus } = {}) {
   let attempt = 0;
   let socket = null;
   let closedByUser = false;
+  let reconnectTimer = null;
+
+  // Exactly one reconnect per drop. Without the guard a single failure can be
+  // scheduled twice (browsers fire `error` *and* then `close`), which snowballs.
+  function scheduleReconnect() {
+    if (closedByUser || reconnectTimer) return;
+    attempt += 1;
+    reconnectTimer = setTimeout(() => {
+      reconnectTimer = null;
+      open();
+    }, Math.min(1000 * attempt, 5000));
+  }
 
   function open() {
+    if (closedByUser) return;
     if (onStatus) onStatus("connecting");
-    socket = new WebSocket(`${proto}://${location.host}${path}`);
+    const ws = new WebSocket(`${proto}://${location.host}${path}`);
+    socket = ws;
 
-    socket.addEventListener("open", () => {
+    ws.addEventListener("open", () => {
+      if (ws !== socket) return; // stale socket from a previous attempt
       attempt = 0;
       if (onStatus) onStatus("open");
       if (onOpen) onOpen();
     });
 
-    socket.addEventListener("message", (event) => {
+    ws.addEventListener("message", (event) => {
+      if (ws !== socket) return;
       let msg;
       try { msg = JSON.parse(event.data); } catch { return; }
       if (msg.type === "state" && onState) onState(msg.state, msg.role);
-      else if (msg.type === "error" && onError) onError(msg.message);
+      else if (msg.type === "error" && onError) onError(msg.message, msg.reason);
     });
 
-    socket.addEventListener("close", () => {
+    // A failed handshake fires `error` and then `close`; let `close` own the
+    // reconnect so we never schedule it twice for the same socket.
+    ws.addEventListener("error", () => {});
+
+    ws.addEventListener("close", () => {
+      if (ws !== socket) return;
       if (onStatus) onStatus("closed");
-      if (closedByUser) return;
-      attempt += 1;
-      setTimeout(open, Math.min(1000 * attempt, 5000));
+      scheduleReconnect();
     });
-
-    socket.addEventListener("error", () => socket.close());
   }
 
   open();
@@ -112,6 +129,10 @@ function connectWS(path, { onState, onError, onOpen, onStatus } = {}) {
     },
     close() {
       closedByUser = true;
+      if (reconnectTimer) {
+        clearTimeout(reconnectTimer);
+        reconnectTimer = null;
+      }
       if (socket) socket.close();
     },
   };

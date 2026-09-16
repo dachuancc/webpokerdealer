@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 from pathlib import Path
 
 from fastapi import FastAPI
@@ -12,6 +13,16 @@ from .web.routes import router as http_router
 from .web.ws import router as ws_router
 
 BASE_DIR = Path(__file__).resolve().parent
+
+logger = logging.getLogger("webpokerdealer")
+if not logger.handlers:
+    _handler = logging.StreamHandler()
+    _handler.setFormatter(
+        logging.Formatter("%(asctime)s %(levelname)s:     %(message)s", "%H:%M:%S")
+    )
+    logger.addHandler(_handler)
+    logger.setLevel(logging.INFO)
+    logger.propagate = False
 
 
 def create_app() -> FastAPI:

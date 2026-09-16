@@ -117,6 +117,16 @@ def test_player_websocket_rejects_bad_token():
     with client.websocket_connect(f"/ws/{code}?role=player&token=bad") as ws:
         message = ws.receive_json()
         assert message["type"] == "error"
+        assert message["reason"] == "bad_token"
+
+
+def test_websocket_unknown_table_reports_reason():
+    # Clients use this reason to stop reconnecting to a table that is gone
+    # (e.g. after the server restarts and in-memory state is cleared).
+    with client.websocket_connect("/ws/ZZZZ?role=board") as ws:
+        message = ws.receive_json()
+        assert message["type"] == "error"
+        assert message["reason"] == "table_missing"
 
 
 def test_player_can_fold_over_websocket():
