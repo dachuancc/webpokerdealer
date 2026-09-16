@@ -10,7 +10,7 @@
       <strong id="board-code">{{ code }}</strong>
     </div>
     <div class="board__street">
-      <span id="hand-number" class="badge">未开局</span>
+      <span id="hand-number" class="badge badge--hand">未开局</span>
       <span id="street-label" class="badge badge--street">等待开局</span>
       <span id="conn" class="badge badge--warn">连接中…</span>
     </div>
@@ -19,6 +19,7 @@
       <div class="qr">{{ qr_svg | safe }}</div>
       <p class="muted small">{{ join_url }}</p>
     </details>
+    <button id="settings-btn" class="icon-btn" title="牌桌设置" aria-label="牌桌设置">⚙️</button>
   </header>
 
   <section class="felt">
@@ -31,8 +32,32 @@
   <footer class="board__controls">
     <button id="start-btn" class="btn btn--primary">开始本局</button>
     <button id="next-btn" class="btn">下一轮</button>
-    <button id="reset-btn" class="btn btn--danger">重置牌桌</button>
+    <button id="showdown-btn" class="btn btn--showdown">摊牌</button>
   </footer>
 </main>
+
+<div id="settings" class="modal" hidden>
+  <div class="modal__panel" role="dialog" aria-modal="true" aria-label="牌桌设置">
+    <header class="modal__head">
+      <h2>牌桌设置</h2>
+      <button id="settings-close" class="icon-btn" aria-label="关闭">✕</button>
+    </header>
+
+    <section class="modal__section">
+      <h3>座位顺序</h3>
+      <p class="muted small">按实际就座方向排列，决定发牌与盲注顺序。</p>
+      <div id="order-list" class="order-list"></div>
+    </section>
+
+    <section class="modal__section">
+      <h3>牌局历史</h3>
+      <div id="history-list" class="history-list"></div>
+    </section>
+
+    <section class="modal__section modal__danger">
+      <button id="reset-btn" class="btn btn--danger btn--block">重置牌桌（清空所有玩家与历史）</button>
+    </section>
+  </div>
+</div>
 {% endblock %}
 {% block scripts %}<script src="/static/js/board.js"></script>{% endblock %}

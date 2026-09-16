@@ -90,10 +90,16 @@ async def _handle_message(conn: Connection, table: Table, msg: dict[str, Any]) -
                 table.start_hand()
             elif action == "next_street":
                 table.next_street()
+            elif action == "showdown":
+                table.showdown()
             elif action == "reset":
                 table.reset()
             elif action == "remove_player":
                 table.remove_player(str(msg.get("player_id", "")))
+            elif action == "move_player":
+                table.move_player(
+                    str(msg.get("player_id", "")), str(msg.get("direction", ""))
+                )
             else:
                 raise GameError("未知操作")
         else:

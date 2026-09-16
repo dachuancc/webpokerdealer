@@ -41,6 +41,9 @@ STREET_ORDER: tuple[Street, ...] = (
     Street.SHOWDOWN,
 )
 
+# How many finished hands to keep for the board's history panel.
+HISTORY_LIMIT = 100
+
 STREET_LABELS: dict[Street, str] = {
     Street.WAITING: "等待开局",
     Street.PREFLOP: "翻牌前",
@@ -86,6 +89,10 @@ class Table:
         self.burned: list[Card] = []
         self.street = Street.WAITING
         self.hand_number = 0
+        self.history: list[dict[str, Any]] = []
+        # True once the current hand has been written to ``history`` (or when no
+        # hand is in progress), so a hand is never recorded twice.
+        self._hand_recorded = True
 
     # ------------------------------------------------------------------ seats
 
@@ -99,8 +106,8 @@ class Table:
         return {p.seat: p for p in self.players.values()}
 
     def add_player(self, name: str) -> Player:
-        if self.street not in (Street.WAITING, Street.SHOWDOWN):
-            raise GameError("本局进行中，暂不能入座")
+        # Players may join at any time. Someone joining mid-hand simply sits out
+        # the current hand (they are dealt in when the next one starts).
         name = name.strip()
         if not name:
             raise GameError("昵称不能为空")
@@ -124,6 +131,28 @@ class Table:
         if player is not None:
             self._seats.pop(player.seat, None)
 
+    def move_player(self, player_id: str, direction: str) -> None:
+        """Swap a player with its neighbour to reflect the physical seating.
+
+        Seat order is clockwise and drives button rotation, blinds and the deal
+        order, so reordering seats is how the host matches the real table.
+        """
+        order = self.seated
+        idx = next((i for i, p in enumerate(order) if p.id == player_id), None)
+        if idx is None:
+            raise GameError("玩家不存在")
+        if direction == "up":
+            swap = idx - 1
+        elif direction == "down":
+            swap = idx + 1
+        else:
+            raise GameError("未知的移动方向")
+        if swap < 0 or swap >= len(order):
+            return  # already at the end, nothing to do
+        a, b = order[idx], order[swap]
+        a.seat, b.seat = b.seat, a.seat
+        self._seats = {p.seat: p.id for p in self.players.values()}
+
     def find_by_token(self, token: str) -> Player | None:
         if not token:
             return None
@@ -141,17 +170,23 @@ class Table:
     # ------------------------------------------------------------- hand flow
 
     def start_hand(self) -> None:
-        """Rotate the button, shuffle and deal two hole cards to each player."""
-        if self.street not in (Street.WAITING, Street.SHOWDOWN):
-            raise GameError("当前牌局尚未结束")
+        """Rotate the button, shuffle and deal two hole cards to each player.
+
+        A hand may end early (everyone folds, or the host simply calls it), so
+        starting a new hand is allowed from any street and implicitly settles
+        the current one. Dealing and "next hand" are therefore independent.
+        """
         active = self.seated
         if len(active) < 2:
             raise GameError("至少需要 2 名玩家")
+        if self.street != Street.WAITING:
+            self._finish_hand(showdown=self.street == Street.SHOWDOWN)
 
         self.hand_number += 1
         self.deck = Deck(self.rng)
         self.community = []
         self.burned = []
+        self._hand_recorded = False
         for player in active:
             player.hole = []
             player.folded = False
@@ -165,20 +200,39 @@ class Table:
         self.street = Street.PREFLOP
 
     def next_street(self) -> None:
-        """Burn and reveal the next street (flop / turn / river / showdown)."""
+        """Burn and reveal the next community street (flop / turn / river).
+
+        This never reaches showdown: revealing is one thing, settling the hand
+        is another. Showdown is an explicit action (:meth:`showdown`).
+        """
         if self.street == Street.WAITING:
             raise GameError("尚未开始")
         if self.street == Street.SHOWDOWN:
             raise GameError("本局已结束，请开新局")
+        if self.street == Street.RIVER:
+            raise GameError("已发完河牌，请摊牌或开新局")
 
         target = STREET_ORDER[STREET_ORDER.index(self.street) + 1]
-        if target in (Street.FLOP, Street.TURN, Street.RIVER):
+        if target == Street.FLOP:
             self.burned.append(self.deck.burn())
-            if target == Street.FLOP:
-                self.community.extend(self.deck.draw() for _ in range(3))
-            else:
-                self.community.append(self.deck.draw())
+            self.community.extend(self.deck.draw() for _ in range(3))
+        else:  # turn / river
+            self.burned.append(self.deck.burn())
+            self.community.append(self.deck.draw())
         self.street = target
+
+    def showdown(self) -> None:
+        """Settle the hand and reveal the hole cards of everyone still in.
+
+        Only called when a showdown is actually needed (e.g. the river is out
+        and nobody folded). Everyone who folded is mucked.
+        """
+        if self.street == Street.WAITING:
+            raise GameError("尚未开始")
+        if self.street == Street.SHOWDOWN:
+            raise GameError("本局已结束，请开新局")
+        self.street = Street.SHOWDOWN
+        self._finish_hand(showdown=True)
 
     def set_folded(self, player_id: str, folded: bool) -> None:
         player = self.players.get(player_id)
@@ -198,6 +252,46 @@ class Table:
         self.burned = []
         self.street = Street.WAITING
         self.hand_number = 0
+        self.history = []
+        self._hand_recorded = True
+
+    def _finish_hand(self, *, showdown: bool) -> None:
+        """Append the current hand to the public history log.
+
+        Folded players' hole cards are never written down, and an early-settled
+        hand (no showdown) records no hole cards at all. This keeps the D3
+        invariant: history only ever contains cards that were publicly revealed.
+        """
+        if self._hand_recorded or self.street == Street.WAITING:
+            return
+        players = []
+        for player in self.seated:
+            reveal = showdown and not player.folded
+            players.append(
+                {
+                    "id": player.id,
+                    "name": player.name,
+                    "seat": player.seat,
+                    "folded": player.folded,
+                    "is_dealer": player.is_dealer,
+                    "is_small_blind": player.is_small_blind,
+                    "is_big_blind": player.is_big_blind,
+                    "hole": [c.to_dict() for c in player.hole] if reveal else None,
+                }
+            )
+        self.history.append(
+            {
+                "hand_number": self.hand_number,
+                "street": self.street.value,
+                "street_label": STREET_LABELS[self.street],
+                "showdown": showdown,
+                "community": [c.to_dict() for c in self.community],
+                "players": players,
+            }
+        )
+        self._hand_recorded = True
+        if len(self.history) > HISTORY_LIMIT:
+            del self.history[:-HISTORY_LIMIT]
 
     # ----------------------------------------------------------- dealing math
 
@@ -265,6 +359,7 @@ class Table:
             "button_seat": self.button_seat,
             "seats": self.max_seats,
             "players": players,
+            "history": list(self.history),
         }
 
     def board_state(self) -> dict[str, Any]:

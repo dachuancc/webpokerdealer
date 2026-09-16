@@ -76,7 +76,7 @@ def test_button_rotates_between_hands():
     table.next_street()  # flop
     table.next_street()  # turn
     table.next_street()  # river
-    table.next_street()  # showdown
+    table.showdown()
     assert table.street == Street.SHOWDOWN
     table.start_hand()
     assert table.button_seat != first
@@ -99,14 +99,29 @@ def test_street_progression_reveals_correct_number_of_cards():
     table.next_street()
     assert table.street == Street.RIVER
     assert len(table.community) == 5
-
-    table.next_street()
-    assert table.street == Street.SHOWDOWN
     # Burned once before each of flop, turn and river.
     assert len(table.burned) == 3
 
+    # The deal never advances to showdown on its own.
     with pytest.raises(GameError):
         table.next_street()
+    assert table.street == Street.RIVER
+
+    table.showdown()
+    assert table.street == Street.SHOWDOWN
+    with pytest.raises(GameError):
+        table.next_street()
+    with pytest.raises(GameError):
+        table.showdown()
+
+
+def test_showdown_can_end_the_hand_before_all_cards_are_dealt():
+    table = make_table("Alice", "Bob")
+    table.start_hand()
+    table.next_street()  # flop only
+    table.showdown()
+    assert table.street == Street.SHOWDOWN
+    assert len(table.community) == 3
 
 
 def test_next_street_before_start_is_rejected():
@@ -115,11 +130,38 @@ def test_next_street_before_start_is_rejected():
         table.next_street()
 
 
-def test_cannot_start_while_hand_in_progress():
+def test_showdown_before_start_is_rejected():
+    table = make_table("Alice", "Bob")
+    with pytest.raises(GameError):
+        table.showdown()
+
+
+def test_start_hand_ends_previous_hand_early_and_records_it():
+    # A hand can be won by betting without a showdown, so the host may start the
+    # next hand at any time. Dealing and "next hand" are independent.
+    table = make_table("Alice", "Bob", "Cara")
+    table.start_hand()
+    table.next_street()  # flop
+    table.start_hand()
+    assert table.street == Street.PREFLOP
+    assert table.hand_number == 2
+    assert len(table.history) == 1
+    record = table.history[0]
+    assert record["hand_number"] == 1
+    assert record["showdown"] is False
+    # No showdown -> no hole cards may leak into the history log.
+    assert all(p["hole"] is None for p in record["players"])
+
+
+def test_showdown_is_recorded_once_even_after_starting_next_hand():
     table = make_table("Alice", "Bob")
     table.start_hand()
-    with pytest.raises(GameError):
-        table.start_hand()
+    table.next_street()
+    table.showdown()
+    table.start_hand()
+    assert len(table.history) == 1
+    assert table.history[0]["showdown"] is True
+    assert table.history[0]["hand_number"] == 1
 
 
 def test_board_state_hides_hole_cards_before_showdown():
@@ -146,12 +188,18 @@ def test_showdown_reveals_only_players_who_did_not_fold():
     table.start_hand()
     alice, bob, _cara = table.seated
     table.set_folded(bob.id, True)
-    for _ in range(4):
-        table.next_street()  # flop, turn, river, showdown
+    for _ in range(3):
+        table.next_street()  # flop, turn, river
+    table.showdown()
     assert table.street == Street.SHOWDOWN
     by_id = {p["id"]: p for p in table.board_state()["players"]}
     assert "hole" in by_id[alice.id]
     assert "hole" not in by_id[bob.id]
+    # History reveals exactly the same hands as the board did.
+    record = table.history[0]
+    hist = {p["id"]: p for p in record["players"]}
+    assert hist[alice.id]["hole"] is not None
+    assert hist[bob.id]["hole"] is None
 
 
 def test_fold_toggle():
@@ -190,3 +238,30 @@ def test_remove_player_frees_seat():
     assert alice.id not in table.players
     cara = table.add_player("Cara")
     assert cara.seat == alice.seat
+
+
+def test_add_player_is_allowed_mid_hand_but_not_dealt_in():
+    table = make_table("Alice", "Bob")
+    table.start_hand()
+    cara = table.add_player("Cara")
+    assert cara.hole == []
+    table.start_hand()
+    assert len(cara.hole) == 2
+
+
+def test_move_player_reorders_seats():
+    table = make_table("Alice", "Bob", "Cara")
+    order = [p.name for p in table.seated]
+    table.move_player(table.seated[0].id, "down")
+    assert [p.name for p in table.seated] == [order[1], order[0], order[2]]
+    # The seat mapping stays consistent after the swap.
+    assert all(table._seats[p.seat] == p.id for p in table.players.values())
+
+
+def test_move_player_at_seat_edge_is_a_noop():
+    table = make_table("Alice", "Bob")
+    first, _last = table.seated
+    table.move_player(first.id, "up")
+    assert [p.name for p in table.seated] == ["Alice", "Bob"]
+    with pytest.raises(GameError):
+        table.move_player(first.id, "sideways")

@@ -2,6 +2,7 @@
 
 const code = document.body.dataset.code;
 const tokenKey = `wpd:token:${code}`;
+const CONFIRM_FOLD_KEY = "wpd:confirm-fold";
 const joinView = qs("#join-view");
 const playView = qs("#play-view");
 const holeEl = qs("#hole");
@@ -10,15 +11,42 @@ const hintEl = qs("#hand-hint");
 const connBadge = qs("#conn");
 const foldBtn = qs("#fold-btn");
 const unfoldBtn = qs("#unfold-btn");
+const settingsPanel = qs("#settings");
+const confirmFoldBox = qs("#confirm-fold");
 
 let socket = null;
 let playerId = null;
+
+/* ------------------------------------------------------------------ settings */
+
+function confirmFoldEnabled() {
+  return localStorage.getItem(CONFIRM_FOLD_KEY) !== "0";
+}
+
+confirmFoldBox.checked = confirmFoldEnabled();
+confirmFoldBox.addEventListener("change", () => {
+  localStorage.setItem(CONFIRM_FOLD_KEY, confirmFoldBox.checked ? "1" : "0");
+});
+qs("#settings-btn").addEventListener("click", () => {
+  confirmFoldBox.checked = confirmFoldEnabled();
+  settingsPanel.hidden = false;
+});
+qs("#settings-close").addEventListener("click", () => {
+  settingsPanel.hidden = true;
+});
+settingsPanel.addEventListener("click", (event) => {
+  if (event.target === settingsPanel) settingsPanel.hidden = true;
+});
+
+/* ---------------------------------------------------------------- main view */
 
 function render(state) {
   const me = state.you;
   qs("#player-name").textContent = me ? me.name : "—";
   qs("#player-pos").textContent = me ? positionLabel(me) : "";
   qs("#street-label").textContent = state.street_label;
+  qs("#hand-number").textContent =
+    state.hand_number > 0 ? `第 ${state.hand_number} 局` : "未开局";
 
   const hole = (me && me.hole) || [];
   if (hole.length) {
@@ -64,9 +92,15 @@ function startPlaying(token) {
     },
     onStatus: (status) => setConn(connBadge, status),
   });
-  foldBtn.addEventListener("click", () => socket.send(action("fold")));
-  unfoldBtn.addEventListener("click", () => socket.send(action("unfold")));
 }
+
+foldBtn.addEventListener("click", () => {
+  if (confirmFoldEnabled() && !confirm("确定要弃牌吗？")) return;
+  if (socket) socket.send(action("fold"));
+});
+unfoldBtn.addEventListener("click", () => {
+  if (socket) socket.send(action("unfold"));
+});
 
 qs("#join-form").addEventListener("submit", async (event) => {
   event.preventDefault();

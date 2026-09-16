@@ -83,6 +83,65 @@ def test_board_websocket_start_hand_flow():
         assert len(state["community"]) == 3
 
 
+def test_board_showdown_is_a_separate_action():
+    code = create_table()
+    join(code, "Alice")
+    join(code, "Bob")
+
+    with client.websocket_connect(f"/ws/{code}?role=board") as ws:
+        ws.receive_json()
+        ws.send_json({"type": "action", "action": "start_hand"})
+        ws.receive_json()
+        # Advance only through the deal; the board never auto-shows-down.
+        ws.send_json({"type": "action", "action": "next_street"})
+        assert ws.receive_json()["state"]["street"] == "flop"
+        ws.send_json({"type": "action", "action": "next_street"})
+        assert ws.receive_json()["state"]["street"] == "turn"
+        ws.send_json({"type": "action", "action": "next_street"})
+        state = ws.receive_json()["state"]
+        assert state["street"] == "river"
+        # Now the explicit showdown reveals hands and records history.
+        ws.send_json({"type": "action", "action": "showdown"})
+        state = ws.receive_json()["state"]
+        assert state["street"] == "showdown"
+        assert state["history"][-1]["hand_number"] == 1
+        assert state["history"][-1]["showdown"] is True
+
+
+def test_board_can_start_next_hand_mid_hand():
+    code = create_table()
+    join(code, "Alice")
+    join(code, "Bob")
+
+    with client.websocket_connect(f"/ws/{code}?role=board") as ws:
+        ws.receive_json()
+        ws.send_json({"type": "action", "action": "start_hand"})
+        ws.receive_json()
+        # No showdown needed: the host may start hand 2 right away.
+        ws.send_json({"type": "action", "action": "start_hand"})
+        state = ws.receive_json()["state"]
+        assert state["street"] == "preflop"
+        assert state["hand_number"] == 2
+        assert state["history"][-1]["hand_number"] == 1
+        assert state["history"][-1]["showdown"] is False
+        # The early-ended hand records no hole cards.
+        assert all(p["hole"] is None for p in state["history"][-1]["players"])
+
+
+def test_board_can_reorder_seats():
+    code = create_table()
+    alice = join(code, "Alice")
+    join(code, "Bob")
+
+    with client.websocket_connect(f"/ws/{code}?role=board") as ws:
+        ws.receive_json()
+        ws.send_json(
+            {"type": "action", "action": "move_player", "player_id": alice["player_id"], "direction": "down"}
+        )
+        state = ws.receive_json()["state"]
+        assert [p["name"] for p in state["players"]] == ["Bob", "Alice"]
+
+
 def test_player_websocket_receives_own_hole_cards_only():
     code = create_table()
     alice = join(code, "Alice")

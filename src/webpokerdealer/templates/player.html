@@ -21,8 +21,25 @@
         <strong id="player-name">—</strong>
         <span id="player-pos" class="badge"></span>
       </div>
-      <span id="conn" class="badge badge--warn">连接中…</span>
+      <div class="player__top-right">
+        <span id="hand-number" class="badge badge--hand">未开局</span>
+        <span id="conn" class="badge badge--warn">连接中…</span>
+        <button id="settings-btn" class="icon-btn" title="设置" aria-label="设置">⚙️</button>
+      </div>
     </header>
+
+    <div id="settings" class="modal" hidden>
+      <div class="modal__panel" role="dialog" aria-modal="true" aria-label="玩家设置">
+        <header class="modal__head">
+          <h2>设置</h2>
+          <button id="settings-close" class="icon-btn" aria-label="关闭">✕</button>
+        </header>
+        <label class="toggle">
+          <input id="confirm-fold" type="checkbox" checked>
+          <span>弃牌前需要确认（避免误触）</span>
+        </label>
+      </div>
+    </div>
 
     <div class="player__hand">
       <p class="muted small">你的底牌</p>
