@@ -361,6 +361,10 @@ settingsPanel.addEventListener("click", (event) => {
 const soundToggle = qs("#sound-toggle");
 soundToggle.checked = sfx.enabled();
 soundToggle.addEventListener("change", () => sfx.setEnabled(soundToggle.checked));
+qs("#sound-test").addEventListener("click", () => {
+  sfx.unlock();
+  sfx.reveal();
+});
 
 qs("#reset-btn").addEventListener("click", () => {
   if (confirm("重置牌桌会清空所有玩家与牌局历史，确定吗？")) socket.send(action("reset"));

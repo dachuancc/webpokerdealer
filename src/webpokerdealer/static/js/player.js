@@ -13,9 +13,11 @@ const foldBtn = qs("#fold-btn");
 const unfoldBtn = qs("#unfold-btn");
 const settingsPanel = qs("#settings");
 const confirmFoldBox = qs("#confirm-fold");
+const soundToggle = qs("#sound-toggle");
 
 let socket = null;
 let playerId = null;
+let lastState = null;
 
 /* ------------------------------------------------------------------ settings */
 
@@ -27,8 +29,15 @@ confirmFoldBox.checked = confirmFoldEnabled();
 confirmFoldBox.addEventListener("change", () => {
   localStorage.setItem(CONFIRM_FOLD_KEY, confirmFoldBox.checked ? "1" : "0");
 });
+soundToggle.checked = sfx.enabled();
+soundToggle.addEventListener("change", () => sfx.setEnabled(soundToggle.checked));
+qs("#sound-test").addEventListener("click", () => {
+  sfx.unlock();
+  sfx.reveal();
+});
 qs("#settings-btn").addEventListener("click", () => {
   confirmFoldBox.checked = confirmFoldEnabled();
+  soundToggle.checked = sfx.enabled();
   settingsPanel.hidden = false;
 });
 qs("#settings-close").addEventListener("click", () => {
@@ -40,7 +49,18 @@ settingsPanel.addEventListener("click", (event) => {
 
 /* ---------------------------------------------------------------- main view */
 
+/** Play a sound when this player's own cards appear, the board flips, or showdown. */
+function detectSounds(prev, next) {
+  const prevHole = (prev.you && prev.you.hole) || [];
+  const nextHole = (next.you && next.you.hole) || [];
+  if (nextHole.length > prevHole.length) sfx.deal();
+  if ((next.community || []).length > (prev.community || []).length) sfx.flip();
+  if (prev.street !== "showdown" && next.street === "showdown") sfx.reveal();
+}
+
 function render(state) {
+  if (lastState) detectSounds(lastState, state);
+  lastState = state;
   const me = state.you;
   const avatarSlot = qs("#player-avatar");
   if (me) {

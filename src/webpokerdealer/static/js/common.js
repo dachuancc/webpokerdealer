@@ -190,8 +190,8 @@ function action(name, extra = {}) {
 /* ------------------------------------------------------------------- sound */
 
 /* Tiny WebAudio sound effects: no asset files, no build step. Browsers block
- * audio until a user gesture, so we unlock the context on the first pointerdown
- * and every sound on the board follows a tap anyway. */
+ * audio until a user gesture, so we unlock the context on any interaction; the
+ * first sound may be dropped while the context resumes, so blip retries once. */
 const sfx = (() => {
   const KEY = "wpd:sound";
   let ctx = null;
@@ -211,37 +211,47 @@ const sfx = (() => {
     if (ctx.state === "suspended") ctx.resume();
     return ctx;
   }
-  function blip({ freq, type = "triangle", dur = 0.09, gain = 0.06, dropTo = 0 }) {
-    if (!enabled()) return;
-    const c = unlock();
-    if (!c) return;
-    const t = c.currentTime;
-    const osc = c.createOscillator();
-    const g = c.createGain();
+  function play({ freq, type = "triangle", dur = 0.12, gain = 0.14, dropTo = 0 }) {
+    const t = ctx.currentTime;
+    const osc = ctx.createOscillator();
+    const g = ctx.createGain();
     osc.type = type;
     osc.frequency.setValueAtTime(freq, t);
     if (dropTo) osc.frequency.exponentialRampToValueAtTime(dropTo, t + dur);
     g.gain.setValueAtTime(0.0001, t);
-    g.gain.exponentialRampToValueAtTime(gain, t + 0.008);
+    g.gain.exponentialRampToValueAtTime(gain, t + 0.01);
     g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
     osc.connect(g);
-    g.connect(c.destination);
+    g.connect(ctx.destination);
     osc.start(t);
-    osc.stop(t + dur + 0.02);
+    osc.stop(t + dur + 0.03);
+  }
+  function blip(opts, retried = false) {
+    if (!enabled()) return;
+    const c = unlock();
+    if (!c) return;
+    if (c.state !== "running") {
+      // The context is still resuming (or blocked); try once after resume.
+      c.resume().then(() => { if (!retried) blip(opts, true); }).catch(() => {});
+      return;
+    }
+    play(opts);
   }
 
   return {
     enabled,
     setEnabled,
     unlock,
-    deal() { blip({ freq: 540, dropTo: 300, dur: 0.1, gain: 0.05 }); },
-    flip() { blip({ freq: 320, type: "square", dur: 0.07, gain: 0.04 }); },
+    deal() { blip({ freq: 560, dropTo: 320, dur: 0.13, gain: 0.14 }); },
+    flip() { blip({ freq: 340, type: "square", dur: 0.1, gain: 0.1 }); },
     reveal() {
-      blip({ freq: 700, dur: 0.1, gain: 0.05 });
-      setTimeout(() => blip({ freq: 1000, dur: 0.12, gain: 0.05 }), 90);
+      blip({ freq: 700, dur: 0.13, gain: 0.14 });
+      setTimeout(() => blip({ freq: 1050, dur: 0.16, gain: 0.14 }), 110);
     },
   };
 })();
 
-// Unlock the audio context on the first interaction so later sounds can play.
-window.addEventListener("pointerdown", () => sfx.unlock(), { once: true });
+// Unlock audio on the earliest interaction; try a few event types for safety.
+["pointerdown", "touchstart", "keydown"].forEach((type) =>
+  window.addEventListener(type, () => sfx.unlock(), { passive: true })
+);
