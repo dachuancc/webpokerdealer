@@ -1,0 +1,15 @@
+services:
+  webpokerdealer:
+    build: .
+    image: webpokerdealer:latest
+    container_name: webpokerdealer
+    restart: unless-stopped
+    ports:
+      # host port is configurable via .env (default 8123)
+      - "${WPD_HOST_PORT:-8123}:8000"
+    environment:
+      WPD_PORT: "8000"
+      WPD_MAX_SEATS: "${WPD_MAX_SEATS:-9}"
+      # Set this when running behind a reverse proxy or if the auto-detected
+      # host in QR codes is wrong, e.g. http://192.168.1.10:8123
+      WPD_PUBLIC_BASE_URL: "${WPD_PUBLIC_BASE_URL:-}"

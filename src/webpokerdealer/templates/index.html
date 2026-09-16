@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block title %}Web Poker Dealer{% endblock %}
+{% block body_class %}page-home{% endblock %}
+{% block content %}
+<main class="home">
+  <header class="home__header">
+    <h1>🃏 Web Poker Dealer</h1>
+    <p class="muted">家庭德州扑克发牌助手 · 不用洗牌发牌</p>
+  </header>
+
+  <section class="panel">
+    <h2>创建牌桌</h2>
+    <p class="muted">用平板打开作为公牌桌，放在桌子中间。</p>
+    <button id="create-btn" class="btn btn--primary btn--block">创建牌桌</button>
+  </section>
+
+  <section class="panel">
+    <h2>加入牌桌</h2>
+    <form id="join-form" class="form">
+      <label class="field">
+        <span>牌桌号</span>
+        <input id="join-code" name="code" inputmode="latin" autocomplete="off"
+               maxlength="4" placeholder="例如 AB3K" required>
+      </label>
+      <label class="field">
+        <span>你的昵称</span>
+        <input id="join-name" name="name" autocomplete="nickname"
+               maxlength="16" placeholder="例如 小明" required>
+      </label>
+      <button type="submit" class="btn btn--block">入座</button>
+    </form>
+  </section>
+
+  <p class="home__foot muted">仅供家庭娱乐 · 不涉及赌博</p>
+</main>
+{% endblock %}
+{% block scripts %}<script src="/static/js/index.js"></script>{% endblock %}

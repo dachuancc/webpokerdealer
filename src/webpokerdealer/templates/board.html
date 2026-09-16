@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}公牌桌 · {{ code }}{% endblock %}
+{% block body_class %}page-board{% endblock %}
+{% block body_attrs %}data-code="{{ code }}"{% endblock %}
+{% block content %}
+<main class="board">
+  <header class="board__top">
+    <div class="board__code">
+      <span class="muted">牌桌号</span>
+      <strong id="board-code">{{ code }}</strong>
+    </div>
+    <div class="board__street">
+      <span id="hand-number" class="badge">未开局</span>
+      <span id="street-label" class="badge badge--street">等待开局</span>
+      <span id="conn" class="badge badge--warn">连接中…</span>
+    </div>
+    <details class="board__join">
+      <summary>扫码加入</summary>
+      <div class="qr">{{ qr_svg | safe }}</div>
+      <p class="muted small">{{ join_url }}</p>
+    </details>
+  </header>
+
+  <section class="felt">
+    <div id="community" class="community" aria-label="公共牌"></div>
+    <p id="community-hint" class="community-hint muted">点击下方「开始本局」发牌</p>
+  </section>
+
+  <section id="seats" class="seats" aria-label="座位"></section>
+
+  <footer class="board__controls">
+    <button id="start-btn" class="btn btn--primary">开始本局</button>
+    <button id="next-btn" class="btn">下一轮</button>
+    <button id="reset-btn" class="btn btn--danger">重置牌桌</button>
+  </footer>
+</main>
+{% endblock %}
+{% block scripts %}<script src="/static/js/board.js"></script>{% endblock %}

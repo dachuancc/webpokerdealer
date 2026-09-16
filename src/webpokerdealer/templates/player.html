@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block title %}我的手牌 · {{ code }}{% endblock %}
+{% block body_class %}page-player{% endblock %}
+{% block body_attrs %}data-code="{{ code }}"{% endblock %}
+{% block content %}
+<main class="player">
+  <section id="join-view" class="panel join-view" hidden>
+    <h2>加入牌桌 {{ code }}</h2>
+    <form id="join-form" class="form">
+      <label class="field">
+        <span>你的昵称</span>
+        <input id="join-name" name="name" autocomplete="nickname" maxlength="16" required>
+      </label>
+      <button type="submit" class="btn btn--primary btn--block">入座</button>
+    </form>
+  </section>
+
+  <section id="play-view" hidden>
+    <header class="player__top">
+      <div>
+        <strong id="player-name">—</strong>
+        <span id="player-pos" class="badge"></span>
+      </div>
+      <span id="conn" class="badge badge--warn">连接中…</span>
+    </header>
+
+    <div class="player__hand">
+      <p class="muted small">你的底牌</p>
+      <div id="hole" class="hole"></div>
+      <p id="hand-hint" class="muted small">等待发牌…</p>
+    </div>
+
+    <div class="player__board">
+      <p class="muted small">公共牌 · <span id="street-label">等待开局</span></p>
+      <div id="community" class="community community--sm"></div>
+    </div>
+
+    <div class="player__actions">
+      <button id="fold-btn" class="btn btn--danger btn--block">弃牌</button>
+      <button id="unfold-btn" class="btn btn--block" hidden>取消弃牌</button>
+    </div>
+  </section>
+</main>
+{% endblock %}
+{% block scripts %}<script src="/static/js/player.js"></script>{% endblock %}
