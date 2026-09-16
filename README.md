@@ -41,7 +41,7 @@ uv run uvicorn webpokerdealer.main:app --reload --host 0.0.0.0 --port 8000
 ## 测试
 
 ```bash
-uv run pytest    # 基线 51 用例全绿
+uv run pytest    # 基线 56 用例全绿
 ```
 
 ## 开发提示

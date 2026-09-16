@@ -212,6 +212,37 @@ def test_showdown_reveals_only_players_who_did_not_fold():
     assert hist[bob.id]["hole"] is None
 
 
+def test_set_dealer_mid_hand_reassigns_blinds():
+    table = make_table("Alice", "Bob", "Cara")
+    table.start_hand()
+    target = table.seated[2]
+    table.set_dealer(target.id)
+    assert target.is_dealer
+    assert sum(p.is_dealer for p in table.seated) == 1
+    assert sum(p.is_small_blind for p in table.seated) == 1
+    assert sum(p.is_big_blind for p in table.seated) == 1
+    # The next hand rotates on from the corrected button.
+    table.next_street()
+    table.showdown()
+    table.start_hand()
+    seats = [p.seat for p in table.seated]
+    assert table.button_seat == seats[(seats.index(target.seat) + 1) % len(seats)]
+
+
+def test_set_dealer_before_first_hand_skips_rotation():
+    table = make_table("Alice", "Bob", "Cara")
+    target = table.seated[2]
+    table.set_dealer(target.id)
+    table.start_hand()
+    assert target.is_dealer
+
+
+def test_set_dealer_rejects_unknown_player():
+    table = make_table("Alice", "Bob")
+    with pytest.raises(GameError):
+        table.set_dealer("nope")
+
+
 def test_fold_toggle():
     table = make_table("Alice", "Bob")
     table.start_hand()

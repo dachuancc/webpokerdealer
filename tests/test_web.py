@@ -224,6 +224,24 @@ def test_board_can_reorder_seats():
         assert [p["name"] for p in state["players"]] == ["Bob", "Alice"]
 
 
+def test_board_can_set_the_dealer():
+    code = create_table()
+    alice = join(code, "Alice")
+    bob = join(code, "Bob")
+
+    with client.websocket_connect(board_url(code)) as ws:
+        ws.receive_json()
+        ws.send_json({"type": "action", "action": "start_hand"})
+        ws.receive_json()
+        ws.send_json(
+            {"type": "action", "action": "set_dealer", "player_id": bob["player_id"]}
+        )
+        state = ws.receive_json()["state"]
+        by_id = {p["id"]: p for p in state["players"]}
+        assert by_id[bob["player_id"]]["is_dealer"]
+        assert not by_id[alice["player_id"]]["is_dealer"]
+
+
 def test_player_websocket_receives_own_hole_cards_only():
     code = create_table()
     alice = join(code, "Alice")

@@ -94,6 +94,8 @@ class Table:
         self.players: dict[str, Player] = {}
         self._seats: dict[int, str] = {}
         self.button_seat: int | None = None
+        # Set when the host picks the dealer for an upcoming hand; see set_dealer.
+        self._button_preset = False
         self.deck = Deck(rng)
         self.community: list[Card] = []
         self.burned: list[Card] = []
@@ -212,7 +214,13 @@ class Table:
             player.is_small_blind = False
             player.is_big_blind = False
 
-        self._rotate_button(active)
+        seats = [p.seat for p in active]
+        if self._button_preset and self.button_seat in seats:
+            # The host explicitly chose this hand's dealer; don't rotate past it.
+            self._button_preset = False
+        else:
+            self._button_preset = False
+            self._rotate_button(active)
         self._assign_blinds(active)
         self._deal_hole_cards(active)
         self.street = Street.PREFLOP
@@ -260,6 +268,22 @@ class Table:
             raise GameError("当前不能弃牌")
         player.folded = folded
 
+    def set_dealer(self, player_id: str) -> None:
+        """Manually put the button on a player (fix a wrong dealer).
+
+        During a live hand this corrects the current dealer and blinds; between
+        hands it chooses who deals next (skipping the automatic rotation).
+        """
+        player = self.players.get(player_id)
+        if player is None:
+            raise GameError("玩家不存在")
+        self.button_seat = player.seat
+        if self.street in (Street.WAITING, Street.SHOWDOWN):
+            self._button_preset = True
+        else:
+            self._button_preset = False
+            self._assign_blinds(self.seated)
+
     def reset(self) -> None:
         """Clear all players and start over with a brand new table."""
         self.players.clear()
@@ -272,6 +296,7 @@ class Table:
         self.hand_number = 0
         self.history = []
         self._hand_recorded = True
+        self._button_preset = False
 
     def _finish_hand(self, *, showdown: bool) -> None:
         """Append the current hand to the public history log.

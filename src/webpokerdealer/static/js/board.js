@@ -146,6 +146,13 @@ function renderOrder(state) {
     row.appendChild(el("span", "order-row__name", `${index + 1}. ${player.name}`));
     row.appendChild(posBadges(player));
 
+    const actions = el("span", "order-row__actions");
+    const dealer = el("button", "btn small", player.is_dealer ? "庄" : "设庄");
+    dealer.title = "把庄家位（D）设为此玩家";
+    dealer.disabled = player.is_dealer;
+    dealer.addEventListener("click", () =>
+      socket.send(action("set_dealer", { player_id: player.id }))
+    );
     const up = el("button", "btn small", "↑");
     up.disabled = index === 0;
     up.addEventListener("click", () =>
@@ -156,8 +163,7 @@ function renderOrder(state) {
     down.addEventListener("click", () =>
       socket.send(action("move_player", { player_id: player.id, direction: "down" }))
     );
-    const actions = el("span", "order-row__actions");
-    actions.append(up, down);
+    actions.append(dealer, up, down);
     row.appendChild(actions);
     orderList.appendChild(row);
   });

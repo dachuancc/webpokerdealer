@@ -112,6 +112,8 @@ async def _handle_message(conn: Connection, table: Table, msg: dict[str, Any]) -
                 table.move_player(
                     str(msg.get("player_id", "")), str(msg.get("direction", ""))
                 )
+            elif action == "set_dealer":
+                table.set_dealer(str(msg.get("player_id", "")))
             else:
                 raise GameError("未知操作")
         else:
