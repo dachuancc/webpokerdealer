@@ -429,11 +429,6 @@ qs("#sound-test").addEventListener("click", () => {
 
 initCommunitySize();
 
-// Image decks bake the picture into each card, so redraw when the deck changes.
-document.addEventListener("appearancechange", () => {
-  if (lastState) render(lastState);
-});
-
 qs("#reset-btn").addEventListener("click", () => {
   if (confirm("重置牌桌会清空所有玩家与牌局历史，确定吗？")) socket.send(action("reset"));
 });
