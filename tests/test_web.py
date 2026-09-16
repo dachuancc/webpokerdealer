@@ -52,6 +52,15 @@ def test_join_unknown_table_is_404():
     assert res.status_code == 404
 
 
+def test_table_rejects_join_when_nine_seats_are_taken():
+    code = create_table()
+    for i in range(9):
+        join(code, f"P{i}")
+    res = client.post(f"/api/tables/{code}/join", json={"name": "P10"})
+    assert res.status_code == 400
+    assert "座位已满" in res.json()["detail"]
+
+
 def test_player_page_loads():
     code = create_table()
     res = client.get(f"/play/{code}")

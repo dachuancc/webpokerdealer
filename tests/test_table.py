@@ -27,6 +27,16 @@ def test_table_enforces_max_seats():
         table.add_player("C")
 
 
+def test_default_table_caps_at_nine_players():
+    # Each table seats at most 9 players by default.
+    table = Table("NINE", rng=random.Random(0))
+    assert table.max_seats == 9
+    for i in range(9):
+        table.add_player(f"P{i}")
+    with pytest.raises(GameError):
+        table.add_player("P10")
+
+
 def test_start_hand_requires_two_players():
     table = make_table("Solo")
     with pytest.raises(GameError):

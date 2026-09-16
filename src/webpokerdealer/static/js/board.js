@@ -110,6 +110,8 @@ function render(state) {
   lastState = state;
   qs("#board-code").textContent = state.code;
   qs("#street-label").textContent = state.street_label;
+  qs("#seat-count").textContent =
+    `座位 ${(state.players || []).length}/${state.seats}`;
   qs("#hand-number").textContent =
     state.hand_number > 0 ? `第 ${state.hand_number} 局` : "未开局";
 

@@ -9,6 +9,7 @@
 - **实时同步**：WebSocket 广播，平板点"下一轮"，所有手机立即更新。
 - **零构建前端**：Jinja2 模板 + 原生 JS，一个容器同时提供页面 / API / WebSocket。
 - **NAS 友好**：单容器 Docker 部署，手机 / 平板通过局域网 IP 访问。
+- **每桌最多 9 人**：座满后服务端拒绝入座（公牌桌显示「座位 X/9」）。
 
 ## 快速开始（本地开发）
 
@@ -37,7 +38,7 @@ uv run uvicorn webpokerdealer.main:app --reload --host 0.0.0.0 --port 8000
 ## 测试
 
 ```bash
-uv run pytest    # 基线 42 用例全绿
+uv run pytest    # 基线 44 用例全绿
 ```
 
 ## 开发提示

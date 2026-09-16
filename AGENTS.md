@@ -39,7 +39,7 @@ tests/                 # test_cards / test_table / test_web
 ```bash
 uv sync                                              # 安装依赖
 uv run uvicorn webpokerdealer.main:app --reload --host 0.0.0.0 --port 8000
-uv run pytest                                        # 跑测试（改动后必须全绿，基线 42）
+uv run pytest                                        # 跑测试（改动后必须全绿，基线 44）
 docker compose up -d --build                         # 本地验证容器
 ```
 
