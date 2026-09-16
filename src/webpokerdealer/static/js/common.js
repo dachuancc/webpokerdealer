@@ -231,31 +231,50 @@ const sfx = (() => {
       /* nothing we can do; later sounds will just be silent on this device */
     }
   }
-  function play({ freq, type = "triangle", dur = 0.12, gain = 0.14, dropTo = 0 }) {
-    const t = ctx.currentTime;
-    const osc = ctx.createOscillator();
-    const g = ctx.createGain();
-    osc.type = type;
-    osc.frequency.setValueAtTime(freq, t);
-    if (dropTo) osc.frequency.exponentialRampToValueAtTime(dropTo, t + dur);
-    g.gain.setValueAtTime(0.0001, t);
-    g.gain.exponentialRampToValueAtTime(gain, t + 0.01);
-    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
-    osc.connect(g);
-    g.connect(ctx.destination);
-    osc.start(t);
-    osc.stop(t + dur + 0.03);
+  let noiseBuffer = null;
+  function noiseData(c) {
+    if (noiseBuffer && noiseBuffer.sampleRate === c.sampleRate) return noiseBuffer;
+    const len = Math.floor(c.sampleRate * 0.4);
+    const buf = c.createBuffer(1, len, c.sampleRate);
+    const data = buf.getChannelData(0);
+    for (let i = 0; i < len; i += 1) data[i] = Math.random() * 2 - 1;
+    noiseBuffer = buf;
+    return buf;
   }
-  function blip(opts, retried = false) {
+
+  /** Run `build` once the context is running (retry once after resume). */
+  function schedule(build, retried = false) {
     if (!enabled()) return;
     const c = unlock();
     if (!c) return;
     if (c.state !== "running") {
-      // The context is still resuming (or blocked); try once after resume.
-      c.resume().then(() => { if (!retried) blip(opts, true); }).catch(() => {});
+      c.resume().then(() => { if (!retried) schedule(build, true); }).catch(() => {});
       return;
     }
-    play(opts);
+    build(c, c.currentTime);
+  }
+
+  /** A card flick: a very short band-passed noise burst whose filter sweeps
+   * down, which reads as the "swish" of flipping/dealing a card. */
+  function swish({ dur = 0.07, gain = 0.22, from = 3600, to = 1200, q = 0.9 } = {}) {
+    schedule((c, t) => {
+      const src = c.createBufferSource();
+      src.buffer = noiseData(c);
+      const band = c.createBiquadFilter();
+      band.type = "bandpass";
+      band.Q.value = q;
+      band.frequency.setValueAtTime(from, t);
+      band.frequency.exponentialRampToValueAtTime(Math.max(80, to), t + dur);
+      const g = c.createGain();
+      g.gain.setValueAtTime(0.0001, t);
+      g.gain.exponentialRampToValueAtTime(gain, t + 0.005);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+      src.connect(band);
+      band.connect(g);
+      g.connect(c.destination);
+      src.start(t);
+      src.stop(t + dur + 0.02);
+    });
   }
 
   return {
@@ -263,11 +282,14 @@ const sfx = (() => {
     setEnabled,
     unlock,
     prime,
-    deal() { blip({ freq: 560, dropTo: 320, dur: 0.13, gain: 0.14 }); },
-    flip() { blip({ freq: 340, type: "square", dur: 0.1, gain: 0.1 }); },
+    // Dealing a card: a softer, slightly lower flick.
+    deal() { swish({ dur: 0.09, gain: 0.2, from: 3000, to: 900 }); },
+    // Flipping a community card: a sharper, higher flick.
+    flip() { swish({ dur: 0.06, gain: 0.24, from: 4300, to: 1400 }); },
+    // Showdown: two quick flips of the cards.
     reveal() {
-      blip({ freq: 700, dur: 0.13, gain: 0.14 });
-      setTimeout(() => blip({ freq: 1050, dur: 0.16, gain: 0.14 }), 110);
+      swish({ dur: 0.06, gain: 0.24, from: 4300, to: 1400 });
+      setTimeout(() => swish({ dur: 0.07, gain: 0.22, from: 3600, to: 1100 }), 120);
     },
   };
 })();
