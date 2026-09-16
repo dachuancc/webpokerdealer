@@ -53,11 +53,15 @@ function renderSeats(state) {
     const head = el("div", "seat__head");
     const dot = el("span", `seat__dot${player.connected ? " seat__dot--on" : ""}`);
     head.appendChild(dot);
-    head.appendChild(el("span", "seat__name", `${player.seat + 1}. ${player.name}`));
-    if (player.is_dealer) head.appendChild(el("span", "badge badge--dealer", "D"));
-    if (player.is_small_blind) head.appendChild(el("span", "badge badge--sb", "SB"));
-    if (player.is_big_blind) head.appendChild(el("span", "badge badge--bb", "BB"));
+    head.appendChild(el("span", "seat__name", player.name));
     seat.appendChild(head);
+
+    const info = el("div", "seat__info");
+    info.appendChild(el("span", "seat__no", `#${player.seat + 1}`));
+    if (player.is_dealer) info.appendChild(el("span", "badge badge--dealer", "D"));
+    if (player.is_small_blind) info.appendChild(el("span", "badge badge--sb", "SB"));
+    if (player.is_big_blind) info.appendChild(el("span", "badge badge--bb", "BB"));
+    seat.appendChild(info);
 
     const cards = el("div", "seat__cards");
     if (Array.isArray(player.hole)) {
