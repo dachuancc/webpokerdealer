@@ -230,7 +230,7 @@ button, input { font: inherit; }
   min-height: 180px;
 }
 .community { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; }
-.community .card { --w: min(var(--community-w, 112px), 18vw); }
+.community .card { --w: var(--community-w, 112px); }
 .community--sm .card { --w: 52px; }
 
 .seats-wrap { display: grid; gap: 6px; }
@@ -394,7 +394,7 @@ button, input { font: inherit; }
 @media (min-aspect-ratio: 5/4) {
   .board { gap: 8px; padding: 10px; }
   .felt { min-height: 150px; padding: 14px; }
-  .community .card { --w: min(var(--community-w, 100px), 18vw); }
+  .community .card { --w: var(--community-w, 100px); }
   .seat { min-height: 88px; }
   .board__controls .btn { padding: 12px 18px; font-size: 1rem; }
 }

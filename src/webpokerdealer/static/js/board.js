@@ -360,23 +360,41 @@ settingsPanel.addEventListener("click", (event) => {
 
 const COMMUNITY_SIZE_KEY = "wpd:community-size";
 const DEFAULT_COMMUNITY_SIZE = 112;
+const COMMUNITY_MIN = 64;
+const COMMUNITY_MAX = 320;
 const communitySizeInput = qs("#community-size");
 const communitySizeValue = qs("#community-size-value");
 
+/** The biggest card that still fits five across the felt on this screen. */
+function communityCardLimit() {
+  const felt = qs(".felt");
+  if (!felt || felt.clientWidth === 0) return COMMUNITY_MAX;
+  const style = getComputedStyle(felt);
+  const padding = parseFloat(style.paddingLeft) + parseFloat(style.paddingRight);
+  const gap = 12; // .community gap
+  const perCard = Math.floor((felt.clientWidth - padding - gap * 4) / 5);
+  return Math.max(COMMUNITY_MIN, Math.min(COMMUNITY_MAX, perCard));
+}
+
 function applyCommunitySize(px) {
-  document.body.style.setProperty("--community-w", `${px}px`);
-  communitySizeValue.textContent = `${px}px`;
+  const limit = communityCardLimit();
+  const value = Math.max(COMMUNITY_MIN, Math.min(px, limit));
+  communitySizeInput.max = String(limit);
+  communitySizeInput.value = String(value);
+  communitySizeValue.textContent = `${value}px`;
+  document.body.style.setProperty("--community-w", `${value}px`);
 }
 
 function initCommunitySize() {
   const saved = parseInt(localStorage.getItem(COMMUNITY_SIZE_KEY) || "", 10);
-  const px = Number.isFinite(saved) ? saved : DEFAULT_COMMUNITY_SIZE;
-  communitySizeInput.value = String(px);
-  applyCommunitySize(px);
+  applyCommunitySize(Number.isFinite(saved) ? saved : DEFAULT_COMMUNITY_SIZE);
   communitySizeInput.addEventListener("input", () => {
     const value = parseInt(communitySizeInput.value, 10);
     applyCommunitySize(value);
     localStorage.setItem(COMMUNITY_SIZE_KEY, String(value));
+  });
+  window.addEventListener("resize", () => {
+    applyCommunitySize(parseInt(communitySizeInput.value, 10) || DEFAULT_COMMUNITY_SIZE);
   });
 }
 
