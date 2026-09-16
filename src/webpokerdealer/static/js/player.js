@@ -53,7 +53,11 @@ settingsPanel.addEventListener("click", (event) => {
 function detectSounds(prev, next) {
   const prevHole = (prev.you && prev.you.hole) || [];
   const nextHole = (next.you && next.you.hole) || [];
-  if (nextHole.length > prevHole.length) sfx.deal();
+  // A new hand resets and redeals hole cards in one update, so the count can
+  // stay the same (2 -> 2). Key off the hand number instead, like the board.
+  if (next.hand_number > prev.hand_number || nextHole.length > prevHole.length) {
+    sfx.deal();
+  }
   if ((next.community || []).length > (prev.community || []).length) sfx.flip();
   if (prev.street !== "showdown" && next.street === "showdown") sfx.reveal();
 }
