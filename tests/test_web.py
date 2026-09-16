@@ -190,6 +190,22 @@ def test_board_showdown_is_a_separate_action():
         assert state["history"][-1]["showdown"] is True
 
 
+def test_board_showdown_before_river_is_rejected():
+    code = create_table()
+    join(code, "Alice")
+    join(code, "Bob")
+
+    with client.websocket_connect(board_url(code)) as ws:
+        ws.receive_json()
+        ws.send_json({"type": "action", "action": "start_hand"})
+        ws.receive_json()
+        # Only the river allows a showdown; earlier streets must be rejected.
+        ws.send_json({"type": "action", "action": "showdown"})
+        message = ws.receive_json()
+        assert message["type"] == "error"
+        assert "河牌" in message["message"]
+
+
 def test_board_can_start_next_hand_mid_hand():
     code = create_table()
     join(code, "Alice")

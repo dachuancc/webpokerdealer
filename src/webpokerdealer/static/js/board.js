@@ -22,8 +22,8 @@ const NEXT_LABELS = {
   turn: "发河牌",
 };
 
-const LIVE_STREETS = ["preflop", "flop", "turn", "river"];
-
+// A showdown needs all five community cards, i.e. the river must be dealt.
+const SHOWDOWN_STREET = "river";
 let socket = null;
 let lastState = null;
 
@@ -111,7 +111,6 @@ function renderSeats(state) {
 
 function renderControls(state) {
   const count = (state.players || []).length;
-  const live = LIVE_STREETS.includes(state.street);
 
   startBtn.disabled = count < 2;
   startBtn.textContent = state.hand_number > 0 ? "开始下一局" : "开始本局";
@@ -120,7 +119,7 @@ function renderControls(state) {
   nextBtn.disabled = !["preflop", "flop", "turn"].includes(state.street);
   nextBtn.textContent = NEXT_LABELS[state.street] || "下一轮";
 
-  showdownBtn.disabled = !live;
+  showdownBtn.disabled = state.street !== SHOWDOWN_STREET;
 }
 
 /** Play a sound only when the state actually changed (not on every broadcast). */

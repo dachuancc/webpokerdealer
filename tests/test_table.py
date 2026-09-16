@@ -130,13 +130,20 @@ def test_street_progression_reveals_correct_number_of_cards():
         table.showdown()
 
 
-def test_showdown_can_end_the_hand_before_all_cards_are_dealt():
+def test_showdown_before_the_river_is_rejected():
     table = make_table("Alice", "Bob")
     table.start_hand()
-    table.next_street()  # flop only
+    with pytest.raises(GameError):
+        table.showdown()  # preflop
+    table.next_street()  # flop
+    with pytest.raises(GameError):
+        table.showdown()
+    table.next_street()  # turn
+    with pytest.raises(GameError):
+        table.showdown()
+    table.next_street()  # river
     table.showdown()
     assert table.street == Street.SHOWDOWN
-    assert len(table.community) == 3
 
 
 def test_next_street_before_start_is_rejected():
@@ -171,6 +178,8 @@ def test_start_hand_ends_previous_hand_early_and_records_it():
 def test_showdown_is_recorded_once_even_after_starting_next_hand():
     table = make_table("Alice", "Bob")
     table.start_hand()
+    table.next_street()
+    table.next_street()
     table.next_street()
     table.showdown()
     table.start_hand()
@@ -226,9 +235,8 @@ def test_set_dealer_mid_hand_reassigns_blinds():
     assert sum(p.is_dealer for p in table.seated) == 1
     assert sum(p.is_small_blind for p in table.seated) == 1
     assert sum(p.is_big_blind for p in table.seated) == 1
-    # The next hand rotates on from the corrected button.
-    table.next_street()
-    table.showdown()
+    # The next hand rotates on from the corrected button (starting a new hand
+    # before the river settles the current one).
     table.start_hand()
     seats = [p.seat for p in table.seated]
     assert table.button_seat == seats[(seats.index(target.seat) + 1) % len(seats)]
@@ -255,6 +263,7 @@ def test_showdown_evaluates_hands_and_marks_the_winner():
     alice.hole = cards("As Ad")
     bob.hole = cards("Kh Kd")
     table.community = cards("2c 7d 9h Js 3c")
+    table.street = Street.RIVER
     table.showdown()
     state = table.board_state()
     by_id = {p["id"]: p for p in state["players"]}
@@ -276,6 +285,7 @@ def test_showdown_tie_marks_both_players_as_winners():
     alice.hole = cards("As Kd")
     bob.hole = cards("Ah Kc")
     table.community = cards("2c 7d 9h Js 3c")
+    table.street = Street.RIVER
     table.showdown()
     winners = table.board_state()["winners"]
     assert {w["name"] for w in winners} == {"Alice", "Bob"}
@@ -289,16 +299,6 @@ def test_no_showdown_result_before_showdown():
     assert all("hand_name" not in p for p in state["players"])
 
 
-def test_preflop_showdown_cannot_be_evaluated():
-    # Fewer than five cards are known, so there is nothing to compare.
-    table = make_table("Alice", "Bob")
-    table.start_hand()
-    table.showdown()
-    state = table.board_state()
-    assert state["winners"] == []
-    assert all("hand_name" not in p for p in state["players"])
-
-
 def test_player_state_includes_own_hand_name_at_showdown():
     table = make_table("Alice", "Bob")
     table.start_hand()
@@ -306,6 +306,7 @@ def test_player_state_includes_own_hand_name_at_showdown():
     alice.hole = cards("As Ad")
     bob.hole = cards("Kh Kd")
     table.community = cards("2c 7d 9h Js 3c")
+    table.street = Street.RIVER
     table.showdown()
     state = table.player_state(alice.id)
     assert state["you"]["hand_name"] == "一对"
@@ -320,6 +321,7 @@ def test_folded_players_are_not_evaluated():
     alice.hole = cards("As Ad")
     bob.hole = cards("Kh Kd")
     table.community = cards("2c 7d 9h Js 3c")
+    table.street = Street.RIVER
     table.showdown()
     state = table.board_state()
     assert state["winners"] == [{"id": alice.id, "name": "Alice"}]

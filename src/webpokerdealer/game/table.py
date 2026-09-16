@@ -252,15 +252,18 @@ class Table:
         self.street = target
 
     def showdown(self) -> None:
-        """Settle the hand and reveal the hole cards of everyone still in.
+        """Settle the hand after the river and reveal everyone still in.
 
-        Only called when a showdown is actually needed (e.g. the river is out
-        and nobody folded). Everyone who folded is mucked.
+        A showdown needs all five community cards, so it is only allowed once
+        the river is out. A hand that ends earlier (everyone folds, or by
+        betting) is settled by starting the next hand instead.
         """
         if self.street == Street.WAITING:
             raise GameError("尚未开始")
         if self.street == Street.SHOWDOWN:
             raise GameError("本局已结束，请开新局")
+        if self.street != Street.RIVER:
+            raise GameError("请先发完河牌再摊牌")
         self._result = self._evaluate_showdown()
         self.street = Street.SHOWDOWN
         self._finish_hand(showdown=True)
