@@ -23,9 +23,13 @@
 另外玩家端横屏改为“只看底牌”模式（隐藏公共牌、底牌尽量放大）。
 
 **外观自定义**：牌桌背景（5 种）、牌背颜色（5 种）、四色牌开关；
-通过 CSS 变量 + localStorage 实现，各设备独立记忆（见 D14）。
+通过 CSS 变量 + localStorage 实现，各设备独立记忆（见 D14）。牌面样式另备一套
+可选矢量牌（Byron Knoll，公有领域）。
 
-**下一步候选**：M3 其余（行动计时器 / 多桌，按需）/ M4 NAS 部署实测。
+**部署方案已定档**（本轮只写文档，未写代码）：形态选择 / 多架构镜像 / 树莓派便携 /
+iPad 不能跑 Docker —— 见 `DECISIONS.md` D15 与 `docs/DEPLOY.md` §0。下一步按此实现。
+
+**下一步候选**：M4 部署（发布多架构镜像 / 树莓派便携部署 / NAS 实测，详见 `DECISIONS.md` D15 与 `docs/DEPLOY.md`）。
 
 > 开工前先读 `DECISIONS.md`，尤其 **D3（底牌隔离不变量）**：任何改动都不能让底牌
 > 提前泄露给公牌桌或其它玩家。
@@ -64,10 +68,15 @@
 - [ ] 行动计时器
 - [ ] 多桌（房间列表）
 
-### M4 NAS 部署验证 —— 🟡 进行中
-- [x] Dockerfile + compose + 部署文档
-- [ ] 在家用 NAS 上实测：端口、局域网访问、二维码可达性
+### M4 部署 —— 🟡 进行中
+- [x] Dockerfile + compose + 部署文档（`docs/DEPLOY.md`）
+- [ ] 发布**多架构镜像**（Docker Hub / GHCR；amd64 + arm64 + arm/v7）
+- [ ] 真机实测：局域网访问、端口、二维码可达性（NAS 或 PC）
+- [ ] **树莓派便携部署**：compose 常驻 + 开机自启 + mDNS 地址（`<主机名>.local`）
+- [ ] 可选：Pi 热点模式 / 旅行路由器；`WPD_PUBLIC_BASE_URL` 固定地址
 - [ ] 反向代理 / HTTPS 场景下 `WPD_PUBLIC_BASE_URL` 验证
+
+> 方案与对比见 `docs/DEPLOY.md` §0（谁当宿主 / 多架构镜像 / 树莓派便携 / iPad 不能跑 Docker）。
 
 ## 已完成的问题修复
 
