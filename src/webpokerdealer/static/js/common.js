@@ -195,6 +195,7 @@ function action(name, extra = {}) {
 const sfx = (() => {
   const KEY = "wpd:sound";
   let ctx = null;
+  let primed = false;
 
   function enabled() {
     return localStorage.getItem(KEY) !== "0";
@@ -210,6 +211,25 @@ const sfx = (() => {
     }
     if (ctx.state === "suspended") ctx.resume();
     return ctx;
+  }
+  /** Play a silent buffer inside the first user gesture.
+   *
+   * iOS/Safari won't merely honour resume(): it needs a sound to actually be
+   * started during the gesture before it will allow later (server-driven)
+   * sounds. A one-sample silent buffer is enough, and it is inaudible. */
+  function prime() {
+    const c = unlock();
+    if (!c || primed) return;
+    primed = true;
+    try {
+      const buffer = c.createBuffer(1, 1, 22050);
+      const src = c.createBufferSource();
+      src.buffer = buffer;
+      src.connect(c.destination);
+      src.start(0);
+    } catch (err) {
+      /* nothing we can do; later sounds will just be silent on this device */
+    }
   }
   function play({ freq, type = "triangle", dur = 0.12, gain = 0.14, dropTo = 0 }) {
     const t = ctx.currentTime;
@@ -242,6 +262,7 @@ const sfx = (() => {
     enabled,
     setEnabled,
     unlock,
+    prime,
     deal() { blip({ freq: 560, dropTo: 320, dur: 0.13, gain: 0.14 }); },
     flip() { blip({ freq: 340, type: "square", dur: 0.1, gain: 0.1 }); },
     reveal() {
@@ -253,5 +274,5 @@ const sfx = (() => {
 
 // Unlock audio on the earliest interaction; try a few event types for safety.
 ["pointerdown", "touchstart", "keydown"].forEach((type) =>
-  window.addEventListener(type, () => sfx.unlock(), { passive: true })
+  window.addEventListener(type, () => sfx.prime(), { passive: true })
 );
