@@ -358,6 +358,28 @@ settingsPanel.addEventListener("click", (event) => {
   if (event.target === settingsPanel) closeSettings();
 });
 
+const COMMUNITY_SIZE_KEY = "wpd:community-size";
+const DEFAULT_COMMUNITY_SIZE = 112;
+const communitySizeInput = qs("#community-size");
+const communitySizeValue = qs("#community-size-value");
+
+function applyCommunitySize(px) {
+  document.body.style.setProperty("--community-w", `${px}px`);
+  communitySizeValue.textContent = `${px}px`;
+}
+
+function initCommunitySize() {
+  const saved = parseInt(localStorage.getItem(COMMUNITY_SIZE_KEY) || "", 10);
+  const px = Number.isFinite(saved) ? saved : DEFAULT_COMMUNITY_SIZE;
+  communitySizeInput.value = String(px);
+  applyCommunitySize(px);
+  communitySizeInput.addEventListener("input", () => {
+    const value = parseInt(communitySizeInput.value, 10);
+    applyCommunitySize(value);
+    localStorage.setItem(COMMUNITY_SIZE_KEY, String(value));
+  });
+}
+
 const soundToggle = qs("#sound-toggle");
 soundToggle.checked = sfx.enabled();
 soundToggle.addEventListener("change", () => sfx.setEnabled(soundToggle.checked));
@@ -365,6 +387,8 @@ qs("#sound-test").addEventListener("click", () => {
   sfx.unlock();
   sfx.reveal();
 });
+
+initCommunitySize();
 
 qs("#reset-btn").addEventListener("click", () => {
   if (confirm("重置牌桌会清空所有玩家与牌局历史，确定吗？")) socket.send(action("reset"));

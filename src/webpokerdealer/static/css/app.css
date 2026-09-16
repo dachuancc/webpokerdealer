@@ -230,7 +230,7 @@ button, input { font: inherit; }
   min-height: 180px;
 }
 .community { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; }
-.community .card { --w: 112px; }
+.community .card { --w: min(var(--community-w, 112px), 18vw); }
 .community--sm .card { --w: 52px; }
 
 .seats-wrap { display: grid; gap: 6px; }
@@ -381,6 +381,10 @@ button, input { font: inherit; }
 .toggle { display: flex; align-items: center; gap: 10px; padding: 10px 0; font-size: .95rem; }
 .toggle input { width: 20px; height: 20px; }
 
+.size-control { display: flex; align-items: center; gap: 12px; }
+.size-control input[type="range"] { flex: 1; accent-color: var(--gold); }
+.size-control .small { min-width: 3.5em; text-align: right; }
+
 .player__top-right { display: flex; align-items: center; gap: 8px; }
 
 /* -------------------------------------------------------- tablet landscape */
@@ -390,7 +394,7 @@ button, input { font: inherit; }
 @media (min-aspect-ratio: 5/4) {
   .board { gap: 8px; padding: 10px; }
   .felt { min-height: 150px; padding: 14px; }
-  .community .card { --w: 100px; }
+  .community .card { --w: min(var(--community-w, 100px), 18vw); }
   .seat { min-height: 88px; }
   .board__controls .btn { padding: 12px 18px; font-size: 1rem; }
 }
