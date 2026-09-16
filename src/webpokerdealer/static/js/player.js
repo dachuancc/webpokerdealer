@@ -2,7 +2,6 @@
 
 const code = document.body.dataset.code;
 const tokenKey = `wpd:token:${code}`;
-const CONFIRM_FOLD_KEY = "wpd:confirm-fold";
 const joinView = qs("#join-view");
 const playView = qs("#play-view");
 const holeEl = qs("#hole");
@@ -12,7 +11,6 @@ const connBadge = qs("#conn");
 const foldBtn = qs("#fold-btn");
 const unfoldBtn = qs("#unfold-btn");
 const settingsPanel = qs("#settings");
-const confirmFoldBox = qs("#confirm-fold");
 const soundToggle = qs("#sound-toggle");
 
 let socket = null;
@@ -21,14 +19,6 @@ let lastState = null;
 
 /* ------------------------------------------------------------------ settings */
 
-function confirmFoldEnabled() {
-  return localStorage.getItem(CONFIRM_FOLD_KEY) !== "0";
-}
-
-confirmFoldBox.checked = confirmFoldEnabled();
-confirmFoldBox.addEventListener("change", () => {
-  localStorage.setItem(CONFIRM_FOLD_KEY, confirmFoldBox.checked ? "1" : "0");
-});
 soundToggle.checked = sfx.enabled();
 soundToggle.addEventListener("change", () => sfx.setEnabled(soundToggle.checked));
 qs("#sound-test").addEventListener("click", () => {
@@ -36,7 +26,6 @@ qs("#sound-test").addEventListener("click", () => {
   sfx.reveal();
 });
 qs("#settings-btn").addEventListener("click", () => {
-  confirmFoldBox.checked = confirmFoldEnabled();
   soundToggle.checked = sfx.enabled();
   settingsPanel.hidden = false;
 });
@@ -126,7 +115,6 @@ function startPlaying(token) {
 }
 
 foldBtn.addEventListener("click", () => {
-  if (confirmFoldEnabled() && !confirm("确定要弃牌吗？")) return;
   if (socket) socket.send(action("fold"));
 });
 unfoldBtn.addEventListener("click", () => {
