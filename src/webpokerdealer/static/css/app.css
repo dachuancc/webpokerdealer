@@ -141,6 +141,7 @@ button, input { font: inherit; }
 .badge--dealer { background: #fff; color: #111; }
 .badge--sb { background: #4f7fbe; }
 .badge--bb { background: #b06a2c; }
+.badge--win { background: var(--gold); color: #2a2000; }
 
 /* ---------------------------------------------------------------- avatars */
 
@@ -255,6 +256,10 @@ button, input { font: inherit; }
 }
 .seat--offline { opacity: .5; }
 .seat--folded { opacity: .55; }
+.seat--winner {
+  border-color: var(--gold);
+  box-shadow: 0 0 0 1px var(--gold), 0 0 14px rgba(232, 196, 106, .35);
+}
 .seat__head { display: flex; align-items: center; gap: 6px; min-width: 0; }
 .seat__name {
   font-weight: 800;
@@ -270,6 +275,7 @@ button, input { font: inherit; }
 .seat__cards { display: flex; gap: 4px; }
 .seat__cards .card { --w: 26px; }
 .seat__meta { font-size: .68rem; color: var(--muted); }
+.seat__hand { font-size: .72rem; font-weight: 700; color: var(--gold); }
 .seat .badge { padding: 1px 6px; font-size: .66rem; }
 .seat .btn.small { padding: 3px 8px; font-size: .7rem; }
 .seat__dot { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); flex: none; }
@@ -294,6 +300,7 @@ button, input { font: inherit; }
 .hole { display: flex; gap: 14px; justify-content: center; margin: 10px 0; }
 .hole .card { --w: 108px; }
 .player__board { text-align: center; margin-bottom: 18px; }
+.player__result { color: var(--gold); font-weight: 700; margin: 8px 0 0; }
 .player__actions { display: grid; gap: 10px; }
 
 #hand-hint.you-folded { color: var(--danger); }
@@ -377,6 +384,8 @@ button, input { font: inherit; }
 .history-player__name { font-weight: 600; min-width: 3.5em; }
 .history-player__name--folded { color: var(--muted); text-decoration: line-through; }
 .history-player__cards { display: flex; gap: 3px; margin-left: auto; align-items: center; }
+.history-player__hand { font-size: .74rem; color: var(--muted); }
+.history-player__hand--win { color: var(--gold); font-weight: 700; }
 
 .toggle { display: flex; align-items: center; gap: 10px; padding: 10px 0; font-size: .95rem; }
 .toggle input { width: 20px; height: 20px; }

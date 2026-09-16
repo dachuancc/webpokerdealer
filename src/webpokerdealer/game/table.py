@@ -16,6 +16,7 @@ from typing import Any
 
 from ..config import settings
 from .cards import Card, Deck
+from .evaluator import best_hand, hand_name
 
 
 class GameError(Exception):
@@ -102,6 +103,8 @@ class Table:
         self.street = Street.WAITING
         self.hand_number = 0
         self.history: list[dict[str, Any]] = []
+        # Showdown evaluation for the current hand: {"scores": {...}, "winners": [...]}.
+        self._result: dict[str, Any] | None = None
         # True once the current hand has been written to ``history`` (or when no
         # hand is in progress), so a hand is never recorded twice.
         self._hand_recorded = True
@@ -207,6 +210,7 @@ class Table:
         self.community = []
         self.burned = []
         self._hand_recorded = False
+        self._result = None
         for player in active:
             player.hole = []
             player.folded = False
@@ -257,8 +261,24 @@ class Table:
             raise GameError("尚未开始")
         if self.street == Street.SHOWDOWN:
             raise GameError("本局已结束，请开新局")
+        self._result = self._evaluate_showdown()
         self.street = Street.SHOWDOWN
         self._finish_hand(showdown=True)
+
+    def _evaluate_showdown(self) -> dict[str, Any]:
+        """Score every player still in the hand (needs at least 5 cards)."""
+        scores: dict[str, tuple[int, ...]] = {}
+        for player in self.seated:
+            if player.folded:
+                continue
+            score = best_hand(player.hole + self.community)
+            if score is not None:
+                scores[player.id] = score
+        if not scores:
+            return {"scores": {}, "winners": []}
+        best = max(scores.values())
+        winners = [pid for pid, score in scores.items() if score == best]
+        return {"scores": scores, "winners": winners}
 
     def set_folded(self, player_id: str, folded: bool) -> None:
         player = self.players.get(player_id)
@@ -297,6 +317,7 @@ class Table:
         self.history = []
         self._hand_recorded = True
         self._button_preset = False
+        self._result = None
 
     def _finish_hand(self, *, showdown: bool) -> None:
         """Append the current hand to the public history log.
@@ -307,21 +328,26 @@ class Table:
         """
         if self._hand_recorded or self.street == Street.WAITING:
             return
+        scores = (self._result or {}).get("scores", {})
+        winner_ids = (self._result or {}).get("winners", [])
         players = []
         for player in self.seated:
             reveal = showdown and not player.folded
-            players.append(
-                {
-                    "id": player.id,
-                    "name": player.name,
-                    "seat": player.seat,
-                    "folded": player.folded,
-                    "is_dealer": player.is_dealer,
-                    "is_small_blind": player.is_small_blind,
-                    "is_big_blind": player.is_big_blind,
-                    "hole": [c.to_dict() for c in player.hole] if reveal else None,
-                }
-            )
+            entry: dict[str, Any] = {
+                "id": player.id,
+                "name": player.name,
+                "seat": player.seat,
+                "folded": player.folded,
+                "is_dealer": player.is_dealer,
+                "is_small_blind": player.is_small_blind,
+                "is_big_blind": player.is_big_blind,
+                "hole": [c.to_dict() for c in player.hole] if reveal else None,
+            }
+            score = scores.get(player.id)
+            if score is not None:
+                entry["hand_name"] = hand_name(score)
+                entry["is_winner"] = player.id in winner_ids
+            players.append(entry)
         self.history.append(
             {
                 "hand_number": self.hand_number,
@@ -388,10 +414,24 @@ class Table:
 
     def _common_state(self) -> dict[str, Any]:
         reveal = self.street == Street.SHOWDOWN
+        result = self._result if reveal else None
+        scores = (result or {}).get("scores", {})
+        winner_ids = (result or {}).get("winners", [])
         players = []
         for player in self.seated:
             # At showdown we reveal everyone who has not folded; folded hands are mucked.
-            players.append(self._player_public(player, reveal=reveal and not player.folded))
+            pub = self._player_public(player, reveal=reveal and not player.folded)
+            score = scores.get(player.id)
+            if score is not None:
+                pub["hand_name"] = hand_name(score)
+                pub["is_winner"] = player.id in winner_ids
+            players.append(pub)
+        winners = []
+        if reveal:
+            for pid in winner_ids:
+                winner = self.players.get(pid)
+                if winner is not None:
+                    winners.append({"id": winner.id, "name": winner.name})
         return {
             "code": self.code,
             "street": self.street.value,
@@ -402,6 +442,7 @@ class Table:
             "button_seat": self.button_seat,
             "seats": self.max_seats,
             "players": players,
+            "winners": winners,
             "history": list(self.history),
         }
 
@@ -420,7 +461,7 @@ class Table:
         state = self._common_state()
         player = self.players.get(player_id)
         if player is not None:
-            state["you"] = {
+            you: dict[str, Any] = {
                 "id": player.id,
                 "name": player.name,
                 "seat": player.seat,
@@ -430,4 +471,10 @@ class Table:
                 "is_big_blind": player.is_big_blind,
                 "hole": [card.to_dict() for card in player.hole],
             }
+            scores = (self._result or {}).get("scores", {})
+            score = scores.get(player_id)
+            if score is not None:
+                you["hand_name"] = hand_name(score)
+                you["is_winner"] = player_id in (self._result or {}).get("winners", [])
+            state["you"] = you
         return state

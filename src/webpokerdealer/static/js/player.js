@@ -7,6 +7,7 @@ const playView = qs("#play-view");
 const holeEl = qs("#hole");
 const communityEl = qs("#community");
 const hintEl = qs("#hand-hint");
+const resultEl = qs("#result");
 const connBadge = qs("#conn");
 const foldBtn = qs("#fold-btn");
 const unfoldBtn = qs("#unfold-btn");
@@ -72,7 +73,9 @@ function render(state) {
   if (hole.length) {
     renderCards(holeEl, hole);
     hintEl.classList.toggle("you-folded", !!me.folded);
-    hintEl.textContent = me.folded ? "你已弃牌" : "";
+    if (me.folded) hintEl.textContent = "你已弃牌";
+    else if (me.hand_name) hintEl.textContent = `你的牌型：${me.hand_name}`;
+    else hintEl.textContent = "";
   } else {
     renderCards(holeEl, [], { slots: 2 });
     hintEl.classList.remove("you-folded");
@@ -80,6 +83,15 @@ function render(state) {
   }
 
   renderCards(communityEl, state.community || [], { size: "sm", slots: 5 });
+
+  const winners = state.winners || [];
+  if (state.street === "showdown" && winners.length) {
+    const names = winners.map((winner) => winner.name).join("、");
+    resultEl.textContent = winners.length > 1 ? `平局：${names}` : `赢家：${names}`;
+    resultEl.hidden = false;
+  } else {
+    resultEl.hidden = true;
+  }
 
   const folded = !!(me && me.folded);
   const canFold = !["waiting", "showdown"].includes(state.street);

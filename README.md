@@ -10,6 +10,7 @@
 - **零构建前端**：Jinja2 模板 + 原生 JS，一个容器同时提供页面 / API / WebSocket。
 - **NAS 友好**：单容器 Docker 部署，手机 / 平板通过局域网 IP 访问。
 - **每桌最多 9 人**：座满后服务端拒绝入座（公牌桌显示「座位 X/9」）。
+- **摊牌自动比牌**：摊牌时显示各人牌型并高亮赢家（平局并列显示），只判断牌型，不涉及筹码。
 
 ## 快速开始（本地开发）
 
@@ -41,7 +42,7 @@ uv run uvicorn webpokerdealer.main:app --reload --host 0.0.0.0 --port 8000
 ## 测试
 
 ```bash
-uv run pytest    # 基线 56 用例全绿
+uv run pytest    # 基线 69 用例全绿
 ```
 
 ## 开发提示

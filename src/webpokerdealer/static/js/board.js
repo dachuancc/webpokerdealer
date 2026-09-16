@@ -35,10 +35,17 @@ function renderCommunity(state) {
   if (state.street === "waiting") {
     communityHint.textContent = "等待开局：请让玩家依次扫码入座";
   } else if (state.street === "showdown") {
-    communityHint.textContent = "本局已摊牌";
+    communityHint.textContent = winnerText(state) || "本局已摊牌";
   } else {
     communityHint.textContent = `已翻 ${cards.length} 张公共牌`;
   }
+}
+
+function winnerText(state) {
+  const winners = state.winners || [];
+  if (winners.length === 0) return "";
+  const names = winners.map((winner) => winner.name).join("、");
+  return winners.length > 1 ? `平局：${names}` : `赢家：${names}`;
 }
 
 function renderSeats(state) {
@@ -53,10 +60,12 @@ function renderSeats(state) {
     seat.style.setProperty("--seat-color", seatColor(player.seat));
     if (!player.connected) seat.classList.add("seat--offline");
     if (player.folded) seat.classList.add("seat--folded");
+    if (player.is_winner) seat.classList.add("seat--winner");
 
     const head = el("div", "seat__head");
     head.appendChild(avatarEl(player.name, player.seat, { size: "sm" }));
     head.appendChild(el("span", "seat__name", player.name));
+    if (player.is_winner) head.appendChild(el("span", "badge badge--win", "赢"));
     const dot = el("span", `seat__dot${player.connected ? " seat__dot--on" : ""}`);
     head.appendChild(dot);
     seat.appendChild(head);
@@ -77,6 +86,9 @@ function renderSeats(state) {
       }
     }
     seat.appendChild(cards);
+    if (player.hand_name) {
+      seat.appendChild(el("div", "seat__hand", player.hand_name));
+    }
 
     const meta = el("div", "seat__meta");
     const bits = [];
@@ -189,6 +201,11 @@ function historyPlayerLine(player) {
   if (player.folded) name.classList.add("history-player__name--folded");
   line.appendChild(name);
   line.appendChild(posBadges(player));
+  if (player.hand_name) {
+    const hand = el("span", "history-player__hand", player.hand_name);
+    if (player.is_winner) hand.classList.add("history-player__hand--win");
+    line.appendChild(hand);
+  }
 
   const cards = el("span", "history-player__cards");
   if (Array.isArray(player.hole)) {

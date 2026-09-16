@@ -2,6 +2,7 @@ import random
 
 import pytest
 
+from webpokerdealer.game.cards import Card
 from webpokerdealer.game.table import GameError, Street, Table
 
 
@@ -10,6 +11,10 @@ def make_table(*names, seed=42):
     for name in names:
         table.add_player(name)
     return table
+
+
+def cards(text: str) -> list[Card]:
+    return [Card(code[0], code[1]) for code in text.split()]
 
 
 def test_add_player_assigns_seats_and_rejects_blanks():
@@ -241,6 +246,85 @@ def test_set_dealer_rejects_unknown_player():
     table = make_table("Alice", "Bob")
     with pytest.raises(GameError):
         table.set_dealer("nope")
+
+
+def test_showdown_evaluates_hands_and_marks_the_winner():
+    table = make_table("Alice", "Bob")
+    table.start_hand()
+    alice, bob = table.seated
+    alice.hole = cards("As Ad")
+    bob.hole = cards("Kh Kd")
+    table.community = cards("2c 7d 9h Js 3c")
+    table.showdown()
+    state = table.board_state()
+    by_id = {p["id"]: p for p in state["players"]}
+    assert by_id[alice.id]["hand_name"] == "一对"
+    assert by_id[alice.id]["is_winner"] is True
+    assert by_id[bob.id]["is_winner"] is False
+    assert state["winners"] == [{"id": alice.id, "name": "Alice"}]
+    # The history log records the same result.
+    record = table.history[0]
+    hist = {p["id"]: p for p in record["players"]}
+    assert hist[alice.id]["hand_name"] == "一对"
+    assert hist[alice.id]["is_winner"] is True
+
+
+def test_showdown_tie_marks_both_players_as_winners():
+    table = make_table("Alice", "Bob")
+    table.start_hand()
+    alice, bob = table.seated
+    alice.hole = cards("As Kd")
+    bob.hole = cards("Ah Kc")
+    table.community = cards("2c 7d 9h Js 3c")
+    table.showdown()
+    winners = table.board_state()["winners"]
+    assert {w["name"] for w in winners} == {"Alice", "Bob"}
+
+
+def test_no_showdown_result_before_showdown():
+    table = make_table("Alice", "Bob")
+    table.start_hand()
+    state = table.board_state()
+    assert state["winners"] == []
+    assert all("hand_name" not in p for p in state["players"])
+
+
+def test_preflop_showdown_cannot_be_evaluated():
+    # Fewer than five cards are known, so there is nothing to compare.
+    table = make_table("Alice", "Bob")
+    table.start_hand()
+    table.showdown()
+    state = table.board_state()
+    assert state["winners"] == []
+    assert all("hand_name" not in p for p in state["players"])
+
+
+def test_player_state_includes_own_hand_name_at_showdown():
+    table = make_table("Alice", "Bob")
+    table.start_hand()
+    alice, bob = table.seated
+    alice.hole = cards("As Ad")
+    bob.hole = cards("Kh Kd")
+    table.community = cards("2c 7d 9h Js 3c")
+    table.showdown()
+    state = table.player_state(alice.id)
+    assert state["you"]["hand_name"] == "一对"
+    assert state["you"]["is_winner"] is True
+
+
+def test_folded_players_are_not_evaluated():
+    table = make_table("Alice", "Bob")
+    table.start_hand()
+    alice, bob = table.seated
+    table.set_folded(bob.id, True)
+    alice.hole = cards("As Ad")
+    bob.hole = cards("Kh Kd")
+    table.community = cards("2c 7d 9h Js 3c")
+    table.showdown()
+    state = table.board_state()
+    assert state["winners"] == [{"id": alice.id, "name": "Alice"}]
+    by_id = {p["id"]: p for p in state["players"]}
+    assert "hand_name" not in by_id[bob.id]
 
 
 def test_fold_toggle():
