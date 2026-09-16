@@ -234,14 +234,7 @@ socket = connectWS(`/ws/${code}?role=board`, {
   onStatus: (status) => setConn(connBadge, status),
 });
 
-startBtn.addEventListener("click", () => {
-  const state = lastState || {};
-  const live = LIVE_STREETS.includes(state.street);
-  if (live && !confirm(`第 ${state.hand_number} 局尚未摊牌，直接开始下一局？（本局不会亮牌）`)) {
-    return;
-  }
-  socket.send(action("start_hand"));
-});
+startBtn.addEventListener("click", () => socket.send(action("start_hand")));
 nextBtn.addEventListener("click", () => socket.send(action("next_street")));
 showdownBtn.addEventListener("click", () => socket.send(action("showdown")));
 
