@@ -413,6 +413,17 @@ body.deck-four-color {
 .size-control input[type="range"] { flex: 1; accent-color: var(--gold); }
 .size-control .small { min-width: 3.5em; text-align: right; }
 
+.card--art {
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+body.deck-art .card--back {
+  background-image: var(--deck-back-image);
+  background-size: cover;
+  background-position: center;
+}
+
 .swatches { display: flex; gap: 8px; flex-wrap: wrap; margin: 6px 0 12px; }
 .swatch {
   width: 34px;
@@ -425,6 +436,14 @@ body.deck-four-color {
 .swatch--active {
   border-color: var(--gold);
   box-shadow: 0 0 0 2px rgba(232, 196, 106, .45);
+}
+.deck-select {
+  width: 100%;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, .18);
+  background: rgba(0, 0, 0, .25);
+  color: var(--ink);
 }
 
 .player__top-right { display: flex; align-items: center; gap: 8px; }

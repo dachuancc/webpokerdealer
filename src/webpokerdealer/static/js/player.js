@@ -37,6 +37,11 @@ settingsPanel.addEventListener("click", (event) => {
   if (event.target === settingsPanel) settingsPanel.hidden = true;
 });
 
+// Image decks bake the picture into each card, so redraw when the deck changes.
+document.addEventListener("appearancechange", () => {
+  if (lastState) render(lastState);
+});
+
 /* ---------------------------------------------------------------- main view */
 
 /** Play a sound when this player's own cards appear, the board flips, or showdown. */

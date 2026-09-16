@@ -51,6 +51,9 @@ uv run pytest    # 基线 69 用例全绿
 - **音效可替换**：默认用 WebAudio 合成；把 `deal.mp3` / `flip.mp3` / `reveal.mp3`
   放进 `src/webpokerdealer/static/audio/` 即可替换（缺哪个就用合成声兜底），
   详见该目录的 `README.md`。
+- **牌面可替换**：默认用内置 CSS 牌面；把一套图片牌组放进
+  `src/webpokerdealer/static/cards/<牌组>/` 并在 `static/cards/decks.json` 登记，
+  即可在「⚙️ → 外观 → 牌面样式」里选择，详见 `static/cards/README.md`。
 - **前端无构建步骤**：改 `static/js/*.js` / `static/css/*.css` 后浏览器可能命中缓存，
   需**强制刷新**（`Ctrl+Shift+R`）才看得到新代码。
   （模板已给静态资源加 `?v=<内容哈希>`，正常情况会自动破缓存，重启服务后生效。）
