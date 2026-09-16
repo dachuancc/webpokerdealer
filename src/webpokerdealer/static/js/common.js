@@ -23,7 +23,7 @@ function cardEl(card, { faceDown = false, size = "" } = {}) {
     classes.push("card--empty");
     return el("div", classes.join(" "));
   }
-  if (card.red) classes.push("card--red");
+  classes.push(`card--suit-${card.suit}`);
   const node = el("div", classes.join(" "));
   node.appendChild(el("span", "card__rank", card.label));
   node.appendChild(el("span", "card__suit", card.symbol));
@@ -183,6 +183,110 @@ function positionLabel(player) {
   return parts.join(" / ");
 }
 
+/* ---------------------------------------------------------------- appearance */
+
+/* Per-device look: table background, card back and a four-colour deck. Stored in
+ * localStorage and applied through CSS variables, so no assets or build step. */
+const THEMES = {
+  green: { felt: "#0b3d2e", dark: "#072a20", light: "#10553f" },
+  blue: { felt: "#123a5c", dark: "#0a2540", light: "#1a5580" },
+  red: { felt: "#5c1f1f", dark: "#3d1414", light: "#7d2b2b" },
+  purple: { felt: "#3a1f5c", dark: "#241238", light: "#54309c" },
+  charcoal: { felt: "#232526", dark: "#131414", light: "#333738" },
+};
+const CARD_BACKS = {
+  blue: { back: "#1e4f8a", dark: "#163c6b" },
+  red: { back: "#9c2b2b", dark: "#7a2020" },
+  green: { back: "#1e6b4a", dark: "#14503a" },
+  purple: { back: "#5a3a9c", dark: "#3f2870" },
+  gold: { back: "#8a6b1e", dark: "#6b5216" },
+};
+const APPEARANCE_KEYS = {
+  theme: "wpd:theme",
+  cardBack: "wpd:card-back",
+  fourColor: "wpd:four-color",
+};
+
+function appearanceState() {
+  return {
+    theme: localStorage.getItem(APPEARANCE_KEYS.theme) || "green",
+    cardBack: localStorage.getItem(APPEARANCE_KEYS.cardBack) || "blue",
+    fourColor: localStorage.getItem(APPEARANCE_KEYS.fourColor) === "1",
+  };
+}
+
+function applyAppearance(state = appearanceState()) {
+  const root = document.documentElement;
+  const theme = THEMES[state.theme] || THEMES.green;
+  root.style.setProperty("--felt", theme.felt);
+  root.style.setProperty("--felt-dark", theme.dark);
+  root.style.setProperty("--felt-light", theme.light);
+  const back = CARD_BACKS[state.cardBack] || CARD_BACKS.blue;
+  root.style.setProperty("--card-back", back.back);
+  root.style.setProperty("--card-back-dark", back.dark);
+  document.body.classList.toggle("deck-four-color", state.fourColor);
+}
+
+function themeSwatchStyle(theme) {
+  return `radial-gradient(circle at 50% 0%, ${theme.light}, ${theme.felt} 55%, ${theme.dark})`;
+}
+function cardBackSwatchStyle(back) {
+  return `repeating-linear-gradient(45deg, ${back.back}, ${back.back} 5px, ${back.dark} 5px, ${back.dark} 10px)`;
+}
+function swatchButton(active, style, title, onClick) {
+  const button = el("button", `swatch${active ? " swatch--active" : ""}`);
+  button.type = "button";
+  button.title = title;
+  button.style.background = style;
+  button.addEventListener("click", onClick);
+  return button;
+}
+
+function initAppearance() {
+  applyAppearance();
+  const bgEl = qs("#bg-swatches");
+  const backEl = qs("#cardback-swatches");
+  const fourColorEl = qs("#four-color");
+  if (!bgEl && !backEl && !fourColorEl) return;
+
+  function render() {
+    const state = appearanceState();
+    if (bgEl) {
+      bgEl.replaceChildren();
+      Object.entries(THEMES).forEach(([key, theme]) => {
+        bgEl.appendChild(
+          swatchButton(state.theme === key, themeSwatchStyle(theme), key, () => {
+            localStorage.setItem(APPEARANCE_KEYS.theme, key);
+            applyAppearance();
+            render();
+          })
+        );
+      });
+    }
+    if (backEl) {
+      backEl.replaceChildren();
+      Object.entries(CARD_BACKS).forEach(([key, back]) => {
+        backEl.appendChild(
+          swatchButton(state.cardBack === key, cardBackSwatchStyle(back), key, () => {
+            localStorage.setItem(APPEARANCE_KEYS.cardBack, key);
+            applyAppearance();
+            render();
+          })
+        );
+      });
+    }
+    if (fourColorEl) {
+      fourColorEl.checked = state.fourColor;
+      fourColorEl.onchange = () => {
+        localStorage.setItem(APPEARANCE_KEYS.fourColor, fourColorEl.checked ? "1" : "0");
+        applyAppearance();
+      };
+    }
+  }
+
+  render();
+}
+
 /* Tap/click any face-up card to show a big, readable copy of it.
  * Works on the board and on the player's phone. Click anywhere to dismiss. */
 function initCardZoom() {
@@ -206,6 +310,7 @@ function initCardZoom() {
 }
 
 initCardZoom();
+initAppearance();
 
 function action(name, extra = {}) {
   return { type: "action", action: name, ...extra };

@@ -8,8 +8,12 @@
   --danger: #d9534f;
   --ok: #4caf7d;
   --card-bg: #fdfdfb;
-  --card-ink: #1b1b1b;
-  --card-red: #c62828;
+  --suit-s: #1b1b1b;
+  --suit-c: #1b1b1b;
+  --suit-h: #c62828;
+  --suit-d: #c62828;
+  --card-back: #1e4f8a;
+  --card-back-dark: #163c6b;
   --radius: 14px;
   --shadow: 0 6px 20px rgba(0, 0, 0, .35);
   font-family: system-ui, -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
@@ -38,7 +42,7 @@ button, input { font: inherit; }
   height: calc(var(--w) * 1.42);
   border-radius: calc(var(--w) * .12);
   background: var(--card-bg);
-  color: var(--card-ink);
+  color: var(--suit-s);
   box-shadow: var(--shadow);
   display: flex;
   flex-direction: column;
@@ -50,9 +54,24 @@ button, input { font: inherit; }
 }
 .card__rank { font-size: calc(var(--w) * .48); }
 .card__suit { font-size: calc(var(--w) * .44); }
-.card--red { color: var(--card-red); }
+.card--suit-s { color: var(--suit-s); }
+.card--suit-h { color: var(--suit-h); }
+.card--suit-d { color: var(--suit-d); }
+.card--suit-c { color: var(--suit-c); }
+body.deck-four-color {
+  --suit-s: #1b1b1b;
+  --suit-h: #c62828;
+  --suit-d: #1e66c9;
+  --suit-c: #1f7a3f;
+}
 .card--back {
-  background: repeating-linear-gradient(45deg, #1e4f8a, #1e4f8a 6px, #163c6b 6px, #163c6b 12px);
+  background: repeating-linear-gradient(
+    45deg,
+    var(--card-back) 0,
+    var(--card-back) 6px,
+    var(--card-back-dark) 6px,
+    var(--card-back-dark) 12px
+  );
   border: 2px solid #dfe8f5;
 }
 .card--empty {
@@ -393,6 +412,20 @@ button, input { font: inherit; }
 .size-control { display: flex; align-items: center; gap: 12px; }
 .size-control input[type="range"] { flex: 1; accent-color: var(--gold); }
 .size-control .small { min-width: 3.5em; text-align: right; }
+
+.swatches { display: flex; gap: 8px; flex-wrap: wrap; margin: 6px 0 12px; }
+.swatch {
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  border: 2px solid rgba(255, 255, 255, .25);
+  cursor: pointer;
+  padding: 0;
+}
+.swatch--active {
+  border-color: var(--gold);
+  box-shadow: 0 0 0 2px rgba(232, 196, 106, .45);
+}
 
 .player__top-right { display: flex; align-items: center; gap: 8px; }
 
