@@ -239,7 +239,7 @@ function normalizeDecks(list) {
       name: entry.name || entry.id,
       dir: entry.dir.endsWith("/") ? entry.dir : `${entry.dir}/`,
       ext,
-      back: entry.back || "back.svg",
+      back: entry.back || null,
     };
   });
   return map;
@@ -257,9 +257,12 @@ function applyAppearance(state = appearanceState()) {
   document.body.classList.toggle("deck-four-color", state.fourColor);
 
   activeDeck = DECK_MANIFEST[state.deck] || null;
-  document.body.classList.toggle("deck-art", Boolean(activeDeck));
-  if (activeDeck) {
-    root.style.setProperty("--deck-back-image", `url("${activeDeck.dir}${activeDeck.back}")`);
+  // A deck may bring its own card back; otherwise the built-in striped back is
+  // used (still themeable via the 牌背 colour swatches).
+  const backFile = activeDeck && activeDeck.back;
+  document.body.classList.toggle("deck-art", Boolean(backFile));
+  if (backFile) {
+    root.style.setProperty("--deck-back-image", `url("${activeDeck.dir}${backFile}")`);
   }
 }
 

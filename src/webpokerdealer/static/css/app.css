@@ -414,7 +414,7 @@ body.deck-four-color {
 .size-control .small { min-width: 3.5em; text-align: right; }
 
 .card--art {
-  background-size: cover;
+  background-size: contain;
   background-position: center;
   background-repeat: no-repeat;
 }

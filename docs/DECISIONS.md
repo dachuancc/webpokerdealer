@@ -109,6 +109,8 @@
   如 `As.png`）。没有图片时自动用内置 CSS 牌面。切换牌组时页面通过
   `appearancechange` 事件重绘（图片是烙在元素上的）。
 - **版权**：只支持公有领域/CC0/允许再分发的牌组；README 已注明。
+- **内置一套**：`static/cards/knoll/` 收录了 Byron Knoll 的矢量扑克牌（公有领域，
+  SVG，放大不糊）；在 `decks.json` 登记为 `knoll`。该套无牌背，用内置 CSS 牌背。
 
 ## D11 发牌与“下一局”解耦，摊牌是独立动作
 
