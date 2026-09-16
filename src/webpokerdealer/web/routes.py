@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import io
 from pathlib import Path
 
@@ -19,6 +20,22 @@ from .ws import hub
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 templates = Jinja2Templates(directory=str(BASE_DIR / "templates"))
+
+
+def _asset_version() -> str:
+    """Short hash of the static assets, used to bust browser caches.
+
+    Static files change without a build step, so templates append ``?v=<hash>``.
+    The hash changes whenever any JS/CSS file changes (recomputed on restart).
+    """
+    digest = hashlib.sha256()
+    for path in sorted((BASE_DIR / "static").rglob("*")):
+        if path.is_file():
+            digest.update(path.read_bytes())
+    return digest.hexdigest()[:8]
+
+
+templates.env.globals["asset_v"] = _asset_version()
 
 router = APIRouter()
 

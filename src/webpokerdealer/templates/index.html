@@ -14,6 +14,23 @@
     <button id="create-btn" class="btn btn--primary btn--block">创建牌桌</button>
   </section>
 
+  <section id="created" class="panel created" hidden>
+    <h2>牌桌已创建</h2>
+    <div class="created__row">
+      <span class="muted">牌桌号</span>
+      <strong id="created-code" class="created__code">—</strong>
+    </div>
+    <div class="created__row">
+      <span class="muted">主持人 PIN</span>
+      <strong id="created-pin" class="pin">—</strong>
+    </div>
+    <p class="muted small">
+      请记下 PIN：换设备或清除浏览器数据后，打开公牌桌需要输入它。
+      玩家扫码入座<b>无需密码</b>。
+    </p>
+    <a id="enter-board" class="btn btn--primary btn--block">进入公牌桌</a>
+  </section>
+
   <section class="panel">
     <h2>加入牌桌</h2>
     <form id="join-form" class="form">
@@ -34,4 +51,4 @@
   <p class="home__foot muted">仅供家庭娱乐 · 不涉及赌博</p>
 </main>
 {% endblock %}
-{% block scripts %}<script src="/static/js/index.js"></script>{% endblock %}
+{% block scripts %}<script src="/static/js/index.js?v={{ asset_v }}"></script>{% endblock %}
