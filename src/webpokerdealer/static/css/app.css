@@ -414,25 +414,41 @@ button, input { font: inherit; }
 
 /* ------------------------------------------ one-handed phone (landscape) */
 
-/* Hold the phone sideways: put the hole cards and the board side by side and
- * keep the action buttons along the bottom, within thumb reach. */
+/* Hold the phone sideways to "hold your cards": show only your two hole cards
+ * as large as the screen allows, hide the community cards, and keep the action
+ * buttons along the bottom within thumb reach. */
 @media (orientation: landscape) and (max-height: 600px) {
-  .player { max-width: none; padding: 8px 14px 14px; }
+  .player { max-width: none; padding: 8px 16px 12px; }
   .join-view { margin-top: 6vh; }
   #play-view:not([hidden]) {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    grid-template-columns: 1fr;
+    grid-template-rows: auto 1fr auto auto;
     grid-template-areas:
-      "top     top"
-      "hand    board"
-      "actions actions";
+      "top"
+      "hand"
+      "board"
+      "actions";
     align-items: center;
-    gap: 6px 16px;
+    gap: 6px;
   }
   .player__top { grid-area: top; margin-bottom: 0; }
-  .player__hand { grid-area: hand; margin-bottom: 0; }
+  .player__hand {
+    grid-area: hand;
+    margin-bottom: 0;
+    border-top: none;
+    padding-top: 0;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+  }
+  .player__hand > p:first-child { display: none; } /* hide the “你的底牌” label */
   .player__board { grid-area: board; margin-bottom: 0; }
+  .player__board > p:first-child { display: none; } /* hide the “公共牌” label */
+  #community { display: none; } /* card mode: no community cards on the phone */
   .player__actions { grid-area: actions; grid-template-columns: 1fr 1fr; }
-  .hole .card { --w: 84px; }
-  .community--sm .card { --w: 52px; }
+  .hole { margin: 0; }
+  .hole .card { --w: min(38vw, 42vh, 240px); }
 }
