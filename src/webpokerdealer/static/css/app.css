@@ -62,7 +62,7 @@ button, input { font: inherit; }
 }
 .card--sm { --w: 34px; }
 .card--xs { --w: 20px; }
-.card--lg { --w: 74px; }
+.card--lg { --w: 112px; }
 
 /* ------------------------------------------------------------------ layout */
 
@@ -184,8 +184,8 @@ button, input { font: inherit; }
   padding: 20px;
   min-height: 180px;
 }
-.community { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
-.community .card { --w: 74px; }
+.community { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; }
+.community .card { --w: 112px; }
 .community--sm .card { --w: 40px; }
 
 .seats {
