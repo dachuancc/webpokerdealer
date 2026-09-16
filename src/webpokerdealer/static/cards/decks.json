@@ -4,5 +4,12 @@
     "name": "经典矢量（Byron Knoll）",
     "dir": "/static/cards/knoll/",
     "ext": ".svg"
+  },
+  {
+    "id": "greywyvern",
+    "name": "华丽牌面（GreyWyvern）",
+    "dir": "/static/cards/greywyvern/",
+    "ext": ".png",
+    "back": "backb.png"
   }
 ]
