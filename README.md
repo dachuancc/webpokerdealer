@@ -46,8 +46,12 @@ uv run pytest    # 基线 56 用例全绿
 
 ## 开发提示
 
+- **音效可替换**：默认用 WebAudio 合成；把 `deal.mp3` / `flip.mp3` / `reveal.mp3`
+  放进 `src/webpokerdealer/static/audio/` 即可替换（缺哪个就用合成声兜底），
+  详见该目录的 `README.md`。
 - **前端无构建步骤**：改 `static/js/*.js` / `static/css/*.css` 后浏览器可能命中缓存，
   需**强制刷新**（`Ctrl+Shift+R`）才看得到新代码。
+  （模板已给静态资源加 `?v=<内容哈希>`，正常情况会自动破缓存，重启服务后生效。）
 - **WebSocket 错误带 `reason`**（`table_missing` / `bad_token` / `game_error` / ...），
   客户端据此决定是否继续重连（见 `docs/DECISIONS.md` D10）。
 - 服务端 `webpokerdealer` logger 会打印带时间戳的 `ws open/close/reject`，

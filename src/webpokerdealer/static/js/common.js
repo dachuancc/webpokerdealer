@@ -219,7 +219,9 @@ const sfx = (() => {
    * sounds. A one-sample silent buffer is enough, and it is inaudible. */
   function prime() {
     const c = unlock();
-    if (!c || primed) return;
+    if (!c) return;
+    preloadSamples();
+    if (primed) return;
     primed = true;
     try {
       const buffer = c.createBuffer(1, 1, 22050);
@@ -277,17 +279,62 @@ const sfx = (() => {
     });
   }
 
+  /* Optional real recordings. Drop matching files into static/audio/ to replace
+   * the synthesised sounds; anything missing keeps the synth fallback. */
+  const SAMPLE_FILES = {
+    deal: "/static/audio/deal.mp3",
+    flip: "/static/audio/flip.mp3",
+    reveal: "/static/audio/reveal.mp3",
+  };
+  const sampleBuffers = {};
+
+  async function loadSample(name) {
+    if (sampleBuffers[name]) return;
+    const c = unlock();
+    if (!c) return;
+    try {
+      const res = await fetch(SAMPLE_FILES[name]);
+      if (!res.ok) return; // 404 -> keep using the synth fallback
+      sampleBuffers[name] = await c.decodeAudioData(await res.arrayBuffer());
+    } catch (err) {
+      /* missing or broken file: fall back to the synthesised swish */
+    }
+  }
+
+  function preloadSamples() {
+    Object.keys(SAMPLE_FILES).forEach(loadSample);
+  }
+
+  /** Play a loaded sample; returns false when there is nothing to play. */
+  function playSample(name, { gain = 0.6 } = {}) {
+    const buffer = sampleBuffers[name];
+    if (!buffer) return false;
+    schedule((c, t) => {
+      const src = c.createBufferSource();
+      src.buffer = buffer;
+      const g = c.createGain();
+      g.gain.value = gain;
+      src.connect(g);
+      g.connect(c.destination);
+      src.start(t);
+    });
+    return true;
+  }
+
   return {
     enabled,
     setEnabled,
     unlock,
     prime,
-    // Dealing a card: a crisp, short flick.
-    deal() { swish({ dur: 0.05, gain: 0.18, from: 5000, to: 1800, q: 1.2 }); },
-    // Flipping a community card: an even sharper flick.
-    flip() { swish({ dur: 0.035, gain: 0.22, from: 6000, to: 2200, q: 1.4 }); },
-    // Showdown: two quick flips of the cards.
+    // Real recording if present, else a synthesised flick.
+    deal() {
+      if (!playSample("deal")) swish({ dur: 0.05, gain: 0.18, from: 5000, to: 1800, q: 1.2 });
+    },
+    flip() {
+      if (!playSample("flip")) swish({ dur: 0.035, gain: 0.22, from: 6000, to: 2200, q: 1.4 });
+    },
     reveal() {
+      if (playSample("reveal")) return;
       swish({ dur: 0.035, gain: 0.22, from: 6000, to: 2200, q: 1.4 });
       setTimeout(() => swish({ dur: 0.045, gain: 0.2, from: 5200, to: 1800, q: 1.2 }), 110);
     },
