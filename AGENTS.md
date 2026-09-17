@@ -39,7 +39,8 @@ tests/                 # test_cards / test_table / test_web
 ```bash
 uv sync                                              # 安装依赖
 uv run uvicorn webpokerdealer.main:app --reload --host 0.0.0.0 --port 8000
-uv run pytest                                        # 跑测试（改动后必须全绿，基线 69）
+uv run pytest                                        # 跑测试（改动后必须全绿，基线 79；slow 默认跳过）
+uv run pytest -m slow                                # 穷举 5 张手牌空间（约 15 秒，验证评估器与参照双射）
 docker compose up -d --build                         # 本地验证容器
 ```
 
