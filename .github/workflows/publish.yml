@@ -1,0 +1,72 @@
+# 打 tag 时构建多架构镜像（amd64 + arm64）并推送到 Docker Hub。
+#
+# 为什么推送放在 CI 而不是本地：本机到 Docker Hub 的 IPv6 通路会被 RST，
+# 而 registry mirror 只管拉、不管推；CI 的网络干净，且本地不必留凭据。
+# 详见 docs/DEPLOY.md「发布镜像」与 docs/DECISIONS.md D20。
+#
+# 发布方式：git tag v0.1.0 && git push origin v0.1.0
+name: 发布镜像
+
+on:
+  push:
+    # 只认 v 开头的 tag，例如 v0.1.0；普通提交不触发
+    tags: ["v*"]
+
+# 只读仓库内容即可，推送凭据来自 secrets
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: 测试（不绿就不发布）
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v10
+      - name: 单元测试
+        run: uv run pytest
+      - name: 穷举级测试（评估器对拍，约 15 秒）
+        run: uv run pytest -m slow
+
+  publish:
+    name: 构建并推送多架构镜像
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      # arm64 在本 runner（amd64）上靠 qemu 模拟：只有构建阶段被模拟，
+      # 产物在树莓派上是原生执行。
+      - uses: docker/setup-qemu-action@v4
+      - uses: docker/setup-buildx-action@v4
+
+      - name: 登录 Docker Hub
+        uses: docker/login-action@v4
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: 生成镜像标签
+        id: meta
+        uses: docker/metadata-action@v6
+        with:
+          images: ${{ secrets.DOCKERHUB_USERNAME }}/webpokerdealer
+          # v1.2.3 → 1.2.3 / 1.2 / latest
+          tags: |
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+
+      - name: 构建并推送
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          # 关掉 provenance attestation：否则 manifest list 里会多出
+          # unknown/unknown 条目，部分 NAS 面板 / 旧版 Docker 会拉不动。
+          # 我们的目标就是 NAS 与树莓派，所以要这个兼容性。
+          provenance: false
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
