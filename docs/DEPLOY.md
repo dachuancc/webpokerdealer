@@ -248,6 +248,9 @@ docker load -i /share/Public/wpd.tar
 
 ## 1. 准备
 
+> **只想用图形界面？** 直接跳到 **§2.1**——那条路**不需要 clone 仓库、不需要命令行**，
+> 只要把镜像拉下来就能跑（QNAP Container Station 已实测）。下面的准备步是给命令行路线用的。
+
 宿主需要装有 Docker（树莓派装 Docker；多数成品 NAS 支持 Docker / Container Manager）。
 把仓库放到 NAS 上（`git clone`，或直接用 SCP/共享文件夹拷过去）：
 
@@ -264,7 +267,7 @@ cp .env.example .env
 - `WPD_PUBLIC_BASE_URL`：一般留空。**仅当**自动探测的地址不对时再设置
   （例如套了反向代理、或 NAS 有多张网卡），形如 `http://192.168.1.10:8123`
 
-## 2. 构建并启动
+## 2. 命令行：clone + compose（本地构建）
 
 ```bash
 docker compose up -d --build
@@ -278,6 +281,45 @@ docker compose logs -f
 ```
 
 `ports` 默认把宿主的 `8123` 映到容器的 `8000`。
+
+> 不想在 NAS 上构建（NAS 算力有限）？直接用已发布的多架构镜像：把 `docker-compose.yml` 的
+> `image: webpokerdealer:latest` 改成 `image: dachuanc/webpokerdealer:latest`、去掉 `build: .`，
+> 然后 `docker compose up -d` 即可。国内网络下镜像名建议带加速器前缀（见 §0.6）。
+
+## 2.1 图形界面：Container Station（QNAP 实测）
+
+全程在图形界面里操作，**连仓库都不用 clone**，只需要镜像。
+
+**① 先拉镜像**（Images → Pull）
+
+镜像名**必须带国内源前缀**，否则还是走 Docker Hub 会拉不动（原因见 §0.6）：
+
+```
+docker.1ms.run/dachuanc/webpokerdealer:latest
+```
+
+**② 创建容器**（选中镜像 → Create）
+
+| 设置项 | 值 |
+|---|---|
+| Name / 名称 | `webpokerdealer`（随意） |
+| Port Forwarding / 端口转发 | **宿主 `8123` → 容器 `8000`**（宿主端口可改，别和其他服务撞） |
+| Restart policy / 重启策略 | `Unless stopped`（对应 compose 的 `restart: unless-stopped`） |
+| Environment / 环境变量 | `WPD_MAX_SEATS=9`；走反向代理时再加 `WPD_PUBLIC_BASE_URL` |
+| Command / 命令 | **留空**（镜像里已写好 uvicorn 启动命令） |
+| Volumes / 存储 | **不需要**（牌局状态在内存，见 D2） |
+
+> 各版本 Container Station 的字段叫法略有不同（`Port Forwarding` / `端口转发`、
+> `Restart policy` / `自动启动`），按语义对应即可。若 NAS 重启后容器没自己起来，
+> 再检查 Container Station 自身的「自动启动」开关。
+
+**③ 访问**：`http://<NAS的局域网IP>:8123` → 创建牌桌 → 手机扫码入座（同 §3）。
+
+**升级**（图形界面建的容器不受 compose 管理，要手动换）：
+
+1. Images → Pull 新镜像（`latest` 或新的版本号 tag）
+2. 停掉并删除旧容器（**牌局会清空**——这是有意设计，见 D2）
+3. 按上面同样设置再建一个；QNAP 可以「复制 / Clone」旧容器的配置，比手填省事
 
 ## 3. 使用
 
@@ -296,10 +338,16 @@ docker compose logs -f
 
 ## 5. 升级
 
+**命令行路线**：
+
 ```bash
 git pull
 docker compose up -d --build
 ```
+
+**图形界面路线**：见 §2.1（拉新镜像 → 删旧容器 → 按同配置重建）。
+
+两种方式都会**清空牌局**（无持久化，见 §6）。
 
 ## 6. 数据说明
 
