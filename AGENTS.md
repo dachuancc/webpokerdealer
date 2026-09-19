@@ -39,7 +39,7 @@ tests/                 # test_cards / test_table / test_web
 ```bash
 uv sync                                              # 安装依赖
 uv run uvicorn webpokerdealer.main:app --reload --host 0.0.0.0 --port 8000
-uv run pytest                                        # 跑测试（改动后必须全绿，基线 79；slow 默认跳过）
+uv run pytest                                        # 跑测试（改动后必须全绿，基线 90；slow 默认跳过）
 uv run pytest -m slow                                # 穷举 5 张手牌空间（约 15 秒，验证评估器与参照双射）
 docker compose up -d --build                         # 本地验证容器
 ```
@@ -76,6 +76,12 @@ M0 + M1 已完成并**真机三设备联调验证**（底牌隔离、发牌流�
 - 公牌桌控制面用 `host_token` 鉴权（创建时下发，WS 连接时校验）；`pin` 仅用于换设备时换取
   host_token，且只下发给公牌桌（见 D12）。
 - 洗牌必须用 `secrets.SystemRandom`（测试可注入 `random.Random(seed)`）。
+- **上一局、弃牌者、中途入座者的底牌都不得出现在任何视图与历史里**（见 D11）。
+
+> 守护这些不变量的测试分两层（D18）：`tests/test_leak_fuzz.py` 从**行为**上守（随机跑牌局、
+> 检查真正下发的 payload），`tests/test_redaction_chokepoint.py` 从**代码形状**上守
+> （禁止 web 层碰 `hole`/`deck`，禁止整体序列化，状态出口只允许 `Hub.send_state`）。
+> 攻这两块之前先读读它们的文件头。
 
 ## 代码约定
 

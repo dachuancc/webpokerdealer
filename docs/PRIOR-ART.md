@@ -127,16 +127,17 @@ deck.shuffle(random);          // 所有设备各自本地算出同一副牌
 
 ### 5.1 低成本，直接强化现有不变量
 
-1. **泄漏模糊测试**（学 felt 的 5k-hand leak fuzzer）——*建议做*
-   随机跑 N 手（含中途入座、弃牌、摊牌、提前结束等状态组合），把 `board_state()`
-   与每个 `player_state()` **序列化成 JSON 后遍历断言**：
-   摊牌前不含任何底牌、玩家视图不含他人底牌、弃牌者不出现在摊牌结果里。
-   现状：`tests/test_table.py` / `test_web.py` 只有**定向**用例，缺这种"广撒网"式不变量测试。
+1. **泄漏模糊测试**（学 felt 的 5k-hand leak fuzzer）—— ✅ **已做**（`tests/test_leak_fuzz.py`，D18）
+   随机跑牌局（含中途入座、弃牌、移出玩家、移座、换庄、摊牌、提前结束等状态组合），每一步检查
+   `board_state()` 与每个 `player_state()` 的 payload。实现与当初设想有一处重要区别：
+   **不按「牌面集合」比对**，而是按**路径白名单 + 逐条规则核对**——因为每局都会重新洗牌，
+   本局某张底牌与上一局历史里已公开的牌可能是同一个牌面（如 `Td` 重复），单纯集合比对会误报。
+   副产品：拓出了一个真 bug（中途入座者能凭公共牌被判赢），详见 `ROADMAP.md`「已完成的问题修复」。
 
-2. **收口点的结构性约束测试**——*建议做*
-   felt 靠约定 + 测试保证没人绕过 `redact.ts`。我们的两个出口是 `board_state()` /
-   `player_state()`，可以加一个测试扫描 `web/` 与模板，**禁止**在这两处之外访问
-   `hole_cards`。防的是"以后顺手加个接口"这类无声破口。
+2. **收口点的结构性约束测试**—— ✅ **已做**（`tests/test_redaction_chokepoint.py`，D18）
+   比当初设想的多一层：除「禁止 web 层访问 `hole`/`deck`/`burned`/`_result`」外，还禁止
+   **整体序列化**（`asdict`/`vars`/`__dict__`，那是绕过过滤的旁路）与**新增状态出口**
+   （`board_state()`/`player_state()` 只允许在 `web/ws.py::Hub.send_state` 里调用）。
 
 3. **手牌稳定 ID**——*可选*
    felt 用 `${sessionId}-${handNumber}`，因为 `handNumber` 会重启。我们"本局回顾"目前

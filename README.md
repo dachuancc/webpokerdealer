@@ -45,7 +45,7 @@ uv run uvicorn webpokerdealer.main:app --reload --host 0.0.0.0 --port 8000
 ## 测试
 
 ```bash
-uv run pytest         # 基线 79 用例全绿（含与参照实现对拍的差分测试）
+uv run pytest         # 基线 90 用例全绿（含与参照实现对拍的差分测试 + D3 的泄漏模糊测试）
 uv run pytest -m slow  # 穷举 5 张手牌空间（约 15 秒）
 ```
 
