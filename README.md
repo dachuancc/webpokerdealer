@@ -78,6 +78,7 @@ docker compose up -d --build
 
 - [docs/ROADMAP.md](docs/ROADMAP.md) —— 进度与下一步
 - [docs/DECISIONS.md](docs/DECISIONS.md) —— 已定的技术决策
+- [docs/PRIOR-ART.md](docs/PRIOR-ART.md) —— 同类项目调研、可借鉴项与许可证边界
 - [docs/DEPLOY.md](docs/DEPLOY.md) —— NAS/Docker 部署
 - [AGENTS.md](AGENTS.md) —— 给 AI 助手的项目上下文
 

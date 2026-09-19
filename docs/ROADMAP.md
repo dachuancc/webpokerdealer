@@ -34,6 +34,11 @@ iPad 不能跑 Docker —— 见 `DECISIONS.md` D15 与 `docs/DEPLOY.md` §0。�
 **M4 部署** —— 发布多架构镜像 / 树莓派便携部署 / NAS 实测。
 详见 `DECISIONS.md` **D15** 与 `docs/DEPLOY.md` §0。
 
+**可选增强（非必须，来自同类项目调研）** —— 见 `docs/PRIOR-ART.md` §5：
+泄漏模糊测试、收口点结构约束测试（低成本，直接强化 D3）；
+commit-reveal 洗牌（大件，把 D4 升级为可验证公平）；
+虚拟局域网部署路径（补 `DEPLOY.md` §0.2）。
+
 > 开工前先读 `DECISIONS.md`，尤其 **D3（底牌隔离不变量）**：任何改动都不能让底牌
 > 提前泄露给公牌桌或其它玩家。
 

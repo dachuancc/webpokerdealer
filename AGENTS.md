@@ -54,7 +54,9 @@ docker compose up -d --build                         # 本地验证容器
 ## 当前状态与下一步
 
 M0 + M1 已完成并**真机三设备联调验证**（底牌隔离、发牌流程、断线重连均正常）。
-下一步见 `docs/ROADMAP.md` 的「当前状态」；动手前先读 `docs/DECISIONS.md`。
+下一步见 `docs/ROADMAP.md` 的「下一步」；动手前先读 `docs/DECISIONS.md`。
+**动手造轮子前先看 `docs/PRIOR-ART.md`**（同类项目 / 可借鉴项 / 许可证边界）：
+哪些现成方案能参考、哪些只能读思路不能抄代码，那份文档里有结论。
 
 ## 已知坑
 
