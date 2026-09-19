@@ -388,6 +388,34 @@ def test_add_player_is_allowed_mid_hand_but_not_dealt_in():
     assert len(cara.hole) == 2
 
 
+def test_mid_hand_joiner_is_not_scored_or_revealed_at_showdown():
+    """中途入座者本局旁观：不得只凭公共牌参与比牌，也不该出现在亮牌里。
+
+    回归：`_evaluate_showdown` 一度对每个未弃牌玩家求值，而中途入座者
+    `hole == []` 时 `best_hand([] + community)` 仍能算出牌型——于是本局
+    根本没被发牌的人会被判成赢家（`docs/DECISIONS.md` D13 的漏网分支）。
+    """
+    # seed=83：这一副公共牌本身就够强，修复前 Cara 会凭公共牌「赢」。
+    table = make_table("Alice", "Bob", seed=83)
+    table.start_hand()
+    assert all(len(p.hole) == 2 for p in table.seated)
+    cara = table.add_player("Cara")
+    assert cara.hole == []
+    while table.street != Street.RIVER:
+        table.next_street()
+    table.showdown()
+
+    board = table.board_state()
+    assert cara.id not in {w["id"] for w in board["winners"]}
+    cara_pub = next(p for p in board["players"] if p["id"] == cara.id)
+    assert "hole" not in cara_pub  # 没牌可亮
+    assert "hand_name" not in cara_pub  # 不参与比牌
+
+    # 历史是公开数据，也不该给旁观者写下空底牌
+    cara_hist = next(p for p in table.history[-1]["players"] if p["id"] == cara.id)
+    assert cara_hist["hole"] is None
+
+
 def test_move_player_reorders_seats():
     table = make_table("Alice", "Bob", "Cara")
     order = [p.name for p in table.seated]

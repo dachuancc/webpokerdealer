@@ -73,6 +73,18 @@ class Player:
     is_small_blind: bool = False
     is_big_blind: bool = False
 
+    @property
+    def in_hand(self) -> bool:
+        """Whether this player was dealt into the current hand.
+
+        Someone who joins mid-hand sits out until the next hand, so a non-empty
+        ``hole`` is exactly "was dealt in". This keeps late joiners out of the
+        showdown scoring and out of the reveal: otherwise ``best_hand([] +
+        community)`` would still produce a hand from the board alone, and a
+        player who never received a card could be declared the winner.
+        """
+        return bool(self.hole)
+
 
 class Table:
     """One poker table (one room code)."""
@@ -272,7 +284,7 @@ class Table:
         """Score every player still in the hand (needs at least 5 cards)."""
         scores: dict[str, tuple[int, ...]] = {}
         for player in self.seated:
-            if player.folded:
+            if player.folded or not player.in_hand:
                 continue
             score = best_hand(player.hole + self.community)
             if score is not None:
@@ -335,7 +347,7 @@ class Table:
         winner_ids = (self._result or {}).get("winners", [])
         players = []
         for player in self.seated:
-            reveal = showdown and not player.folded
+            reveal = showdown and player.in_hand and not player.folded
             entry: dict[str, Any] = {
                 "id": player.id,
                 "name": player.name,
@@ -423,7 +435,9 @@ class Table:
         players = []
         for player in self.seated:
             # At showdown we reveal everyone who has not folded; folded hands are mucked.
-            pub = self._player_public(player, reveal=reveal and not player.folded)
+            # A late joiner has no cards for this hand, so they are not revealed either.
+            revealed = reveal and player.in_hand and not player.folded
+            pub = self._player_public(player, reveal=revealed)
             score = scores.get(player.id)
             if score is not None:
                 pub["hand_name"] = hand_name(score)
