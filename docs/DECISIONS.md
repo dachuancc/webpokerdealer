@@ -300,3 +300,29 @@
   - *把 uv 从 ghcr 改成 `pip install uv`*（绕开 ghcr）—— 改变了依赖安装方式、多一层不确定性；
     而问题本身在宿主机网络，不在 Dockerfile。
   - *构建时关掉系统 IPv6* —— 能绕过，但为一个镜像构建去改整机网络配置，副作用太大。
+
+## D20 镜像发布：目的地 Docker Hub，推送交给 CI
+
+- **决定**：
+  1. 镜像发到 **Docker Hub**（`<user>/webpokerdealer`），不用 GHCR。
+  2. **推送由 GitHub Actions 完成**（打 `v*` tag 触发），本地不推。
+  3. buildx 关闭 `provenance` attestation。
+- **为什么是 Docker Hub 而不是 GHCR**：目标场景是“家里的 NAS / 树莓派”——
+  NAS 的 Docker 面板（群晖 Container Manager / QNAP / TrueNAS / unRAID）都是围绕
+  Docker Hub 做的，能搜到就一键拉；GHCR 得手动「添加注册表」。
+  另外 GHCR 首次发布的包**默认私有**，NAS 上拉会 denied，需手动改一次可见性；
+  Docker Hub 推上去就是公开的。
+- **为什么推送在 CI**：实测本机到 Docker Hub 的 **IPv4 通路正常**（`registry-1` 返回 401、
+  `auth.docker.io` 返回 200），但 **IPv6 完全不通**，而 Docker 的解析会挑 IPv6
+  —— 拉取时已撞过 `connection reset by peer`。关键是 **registry mirror 只管拉不管推**，
+  所以本机推 Docker Hub 不可靠。CI 网络干净，且本地不留凭据。
+- **为什么关掉 provenance**：buildx 默认给每个平台加一条 attestation，manifest list 里会
+  多出 `unknown/unknown` 条目；部分 NAS 面板与旧版 Docker 会因此拉不动
+  （`no matching manifest for linux/amd64`）。目标是 NAS / 树莓派，取兼容性。
+- **考虑过的其他选项**：
+  - *GHCR* —— 与仓库同源、CI 里用 `GITHUB_TOKEN` 零配置；但 NAS 面板不友好 +
+    首次默认私有，与“家用方便”的目标不合。
+  - *本机 `docker push`* —— 撞 IPv6；要临时关掉整机 IPv6 才能推，副作用大。
+  - *离线 `docker save` / `load`* —— 完全不经过 registry（实测多架构 tar 确实内含
+    amd64 + arm64 两套），保留为网络不通时的备用方案，见 `DEPLOY.md` §0.5。
+  - *保留 attestation* —— 供应链信息更全，代价是部分 NAS 拉不动。

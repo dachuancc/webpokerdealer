@@ -50,6 +50,7 @@ docker buildx build \
 - **不含 `linux/arm/v7`（32 位 ARM），这是有意的**：`ghcr.io/astral-sh/uv` 不发布 arm/v7
   镜像，且 `uvloop` / `httptools` / `pyyaml` 没有 armv7 预编译 wheel（arm64 有）。
   详见 `DECISIONS.md` D15「修订」。32 位树莓派请先刷 64 位系统。
+- **镜像由 CI 构建并推送到 Docker Hub**（打 `v*` tag 触发），用法见 §0.5。
 - **在 amd64 机器上交叉构建 arm64**：本机需要 `qemu-user-static` + `binfmt-support`
   （让内核能执行 arm64 二进制）。构建阶段会被模拟、慢一些（实测：单架构 16 秒、
   **双架构 117 秒**）；**镜像跑到 Pi 上是原生执行**，树莓派侧不需要任何模拟层。
@@ -138,6 +139,50 @@ docker tag  ghcr.nju.edu.cn/astral-sh/uv:latest ghcr.io/astral-sh/uv:latest
 - 镜像源看得到你拉取的**公开**镜像（本项目不推私有镜像，可接受）；敏感场景请自建。
 - 本仓库的 Dockerfile **故意不写死任何国内镜像源**——保持可移植性，国内网络用上面的办法
   在**宿主机**解决（NAS / 树莓派上同理，一次配好长期有效）。见 `DECISIONS.md` D19。
+
+## 0.5 发布镜像到 Docker Hub（打 tag 自动构建）
+
+镜像由 GitHub Actions 构建：**打一个 `v*` tag 就自动跑测试、构建 amd64+arm64 并推送**。
+本地不需要 Docker、不需要凭据。配置在 `.github/workflows/publish.yml`。
+
+**一次性准备**（在网页上操作）：
+
+1. Docker Hub 账号（**邮箱需验证**，否则推不上去）
+2. 建一个 access token：Account Settings → Security → New Access Token（**Read & Write**）
+3. 在 GitHub 仓库加两个 secret（Settings → Secrets and variables → Actions）：
+   - `DOCKERHUB_USERNAME`：你的 Docker Hub 用户名
+   - `DOCKERHUB_TOKEN`：上一步的 token
+
+**发布**：
+
+```bash
+git tag v0.1.0
+git push origin v0.1.0
+```
+
+由 tag 推导出的标签：`0.1.0`、`0.1`、`latest`。
+
+**在 NAS / 树莓派上使用**：
+
+```bash
+docker pull <你的用户名>/webpokerdealer:latest
+```
+
+公开镜像**不需要登录**；NAS 的 Docker 面板里也能直接搜到（这正是选 Docker Hub 的原因）。
+
+> workflow 里的镜像名是 `<DOCKERHUB_USERNAME>/webpokerdealer`（用户名取自 secret）。
+> 想换仓库名就改 `images:` 那行。
+
+**为什么推送放在 CI**：本机到 Docker Hub 的 IPv4 通路是好的，但 IPv6 完全不通，
+而 Docker 的解析会挑 IPv6；关键是 **registry mirror 只管拉不管推**，所以本机推不可靠。
+见 `DECISIONS.md` D20。
+
+**备用方案（拿不到镜像时）**：本机 `save` 成 tar，拷过去 `load`，完全不经过 registry：
+
+```bash
+docker save <用户名>/webpokerdealer:latest -o wpd.tar   # 多架构镜像可整体打包
+scp wpd.tar <nas>:/tmp/ && ssh <nas> 'docker load -i /tmp/wpd.tar'
+```
 
 ## 1. 准备
 
