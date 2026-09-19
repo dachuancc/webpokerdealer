@@ -93,7 +93,11 @@ payload 做路径白名单 + 逐条规则核对）与 `tests/test_redaction_chok
       （`http://192.168.30.13:8123/play/<牌桌号>`，**不是 localhost**）；容器内跑通完整 WS 流程
       （发底牌 → 底牌隔离 → 中途入座旁观 → 摊牌）
 - [x] 部署文档（`docs/DEPLOY.md`）
-- [ ] 发布**多架构镜像**（Docker Hub / GHCR；`linux/amd64` + `linux/arm64`）
+- [x] **多架构构建验证**（本地 `buildx`，`linux/amd64` + `linux/arm64`）：双架构 **117 秒**；
+      arm64 那一份在 qemu 下实测能真跑（`uname -m` = aarch64、`/healthz` 200、完整 WS 流程）；
+      已知现象：qemu 下 `HEALTHCHECK` 会误报 unhealthy（解释器启动 8.8 秒 vs 原生 0.12 秒），
+      真机原生无此问题，详见 `DEPLOY.md` §0.1
+- [ ] 发布**多架构镜像**到 Docker Hub / GHCR（需要凭据，待确认）
       —— `arm/v7` 已弃用，原因见 D15「修订」
 - [ ] **树莓派便携部署**：compose 常驻 + 开机自启 + mDNS 地址（`<主机名>.local`）；
       部署前先 `uname -m` 确认是 64 位系统（`aarch64`）

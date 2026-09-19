@@ -51,12 +51,19 @@ docker buildx build \
   镜像，且 `uvloop` / `httptools` / `pyyaml` 没有 armv7 预编译 wheel（arm64 有）。
   详见 `DECISIONS.md` D15「修订」。32 位树莓派请先刷 64 位系统。
 - **在 amd64 机器上交叉构建 arm64**：本机需要 `qemu-user-static` + `binfmt-support`
-  （让内核能执行 arm64 二进制）。构建阶段会被模拟、慢一些；**镜像跑到 Pi 上是原生执行**，
-  树莓派侧不需要任何模拟层。若 buildx 报 `exec format error`，改用 BuildKit 官方推荐的
-  方式重装 handler：
+  （让内核能执行 arm64 二进制）。构建阶段会被模拟、慢一些（实测：单架构 16 秒、
+  **双架构 117 秒**）；**镜像跑到 Pi 上是原生执行**，树莓派侧不需要任何模拟层。
+  若 buildx 报 `exec format error`，改用 BuildKit 官方推荐的方式重装 handler：
   ```bash
   docker run --privileged --rm tonistiigi/binfmt --install arm64
   ```
+- ⚠️ **用 qemu 跑 arm64 镜像时，`HEALTHCHECK` 会误报 `unhealthy`** —— 不是服务有病：
+  健康检查要新起一个 `python` 进程，而 qemu 下解释器启动被拉到 ~8.8 秒
+  （同一镜像原生只需 **0.12 秒**），超过 Dockerfile 里的 `--timeout=5s`。
+  表现：`docker inspect` 里写 `Health check exceeded timeout (5s)`，但 `curl /healthz` 返回 200。
+  **真实 arm64 硬件（树莓派）上是原生执行，不会有这个问题**；而且健康检查失败
+  **不会**触发重启（`restart: unless-stopped` 只看进程状态），所以即便看到也不影响运行。
+  排查真实故障时不要被它误导。
 
 - 需先 `docker login`（Docker Hub）或 `docker login ghcr.io`（用 PAT）。
   **凭据只留在本机，切勿提交**（安全红线）。
