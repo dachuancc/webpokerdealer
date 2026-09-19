@@ -30,10 +30,10 @@ payload 做路径白名单 + 逐条规则核对）与 `tests/test_redaction_chok
 通过 CSS 变量 + localStorage 实现，各设备独立记忆（见 D14）。牌面样式另备一套
 可选矢量牌（Byron Knoll，公有领域）。
 
-**部署已落地第一步**：Dockerfile / compose **首次真正构建并验证**（16 秒、无警告，
-容器 healthy + 非 root，局域网访问与二维码地址实测正确，容器内跑通完整 WS 流程）。
-部署形态与多架构方案见 `DECISIONS.md` D15（含 `arm/v7` 已弃用的理由）；
-国内拉镜像的坑与解法见 `DEPLOY.md` §0.4 / D19。下一步：多架构镜像发布 + 树莓派实测。
+**部署已端到端跑通（NAS 路径）**：本机容器 → 多架构镜像发布到 Docker Hub
+（`dachuanc/webpokerdealer`，amd64+arm64）→ **NAS 上拉取并真机玩了几局，一切正常**。
+途中踩过的坑都已记录：国内拉镜像（`DEPLOY.md` §0.4）、NAS 图形界面拉不动（§0.6）、
+发布用 CI（D20）、`arm/v7` 弃用（D15）。**只剩树莓派便携部署。**
 
 ## 下一步
 
@@ -109,9 +109,10 @@ payload 做路径白名单 + 逐条规则核对）与 `tests/test_redaction_chok
       （连官方 `python:3.12-slim` 也不行，说明是 NAS 网络而非本站镜像）；在 Container Station 的
       Registry Servers 里加 `docker.1ms.run`，用**带前缀的镜像名**拉取成功。
       完整对照流程与国内源实测表见 `DEPLOY.md` §0.6
-- [ ] **在 NAS / 树莓派上真机跑一局**（拉到了还不够：要起得来、能连上、能正常发牌）
-- [ ] **树莓派便携部署**：compose 常驻 + 开机自启 + mDNS 地址（`<主机名>.local`）；
-      部署前先 `uname -m` 确认是 64 位系统（`aarch64`）
+- [x] **在 NAS 上真机跑一局**（2026-09）：在 NAS 上起容器 + **用手机连上去玩了几局，一切正常**
+      —— 至此「构建 → 发布 → 拉取 → 运行 → 开玩」整条链路端到端验证完毕
+- [ ] **树莓派便携部署**（M4 最后一块）：compose 常驻 + 开机自启 + mDNS 地址（`<主机名>.local`）；
+      **前置条件：先在 Pi 上 `uname -m` 确认是 64 位系统（`aarch64`）**，否则吃不了 arm64 镜像
 - [ ] 可选：Pi 热点模式 / 旅行路由器；`WPD_PUBLIC_BASE_URL` 固定地址
 - [ ] 反向代理 / HTTPS 场景下 `WPD_PUBLIC_BASE_URL` 验证
 
