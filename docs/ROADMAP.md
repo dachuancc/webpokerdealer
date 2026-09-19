@@ -105,7 +105,11 @@ payload 做路径白名单 + 逐条规则核对）与 `tests/test_redaction_chok
       **每个标签都含 amd64 + arm64**、无 `unknown/unknown` 条目（`provenance: false` 生效）、
       **公开可匿名拉取**（拉取摘要与 CI 日志一致），且已拉下来跑通完整 WS 流程
       —— `arm/v7` 已弃用，原因见 D15「修订」
-- [ ] **在 NAS / 树莓派上实测拉取并跑一局**（需要真设备；本机只能验证到“匿名可拉、能跑”）
+- [x] **在 NAS 上实测拉取**（2026-09，QNAP Container Station）：该 NAS **直连 Docker Hub 拉不动任何镜像**
+      （连官方 `python:3.12-slim` 也不行，说明是 NAS 网络而非本站镜像）；在 Container Station 的
+      Registry Servers 里加 `docker.1ms.run`，用**带前缀的镜像名**拉取成功。
+      完整对照流程与国内源实测表见 `DEPLOY.md` §0.6
+- [ ] **在 NAS / 树莓派上真机跑一局**（拉到了还不够：要起得来、能连上、能正常发牌）
 - [ ] **树莓派便携部署**：compose 常驻 + 开机自启 + mDNS 地址（`<主机名>.local`）；
       部署前先 `uname -m` 确认是 64 位系统（`aarch64`）
 - [ ] 可选：Pi 热点模式 / 旅行路由器；`WPD_PUBLIC_BASE_URL` 固定地址

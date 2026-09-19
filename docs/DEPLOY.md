@@ -187,6 +187,65 @@ docker save dachuanc/webpokerdealer:latest -o wpd.tar   # 多架构镜像可整�
 scp wpd.tar <nas>:/tmp/ && ssh <nas> 'docker load -i /tmp/wpd.tar'
 ```
 
+## 0.6 在 NAS 上拉不动镜像怎么办（QNAP 实测）
+
+**先做一步对照，别急着怀疑镜像**：在 NAS 上拉一个官方镜像
+
+```bash
+docker pull python:3.12-slim
+```
+
+| 结果 | 结论 |
+|---|---|
+| **官方镜像也拉不动** | NAS **连不上 Docker Hub**（国内很常见）—— 与本站镜像无关，看下面解法一/二 |
+| 官方镜像能拉，只有本站镜像不行 | 才需要查镜像/架构（见 §0 的 `uname -m`） |
+
+### 解法一：加一个国内 registry（QNAP Container Station 实测可用）
+
+Container Station → **Preferences → Registry Servers → Add**：
+
+| 字段 | 填什么 |
+|---|---|
+| Name | 任意，如 `1ms` |
+| URL | `https://docker.1ms.run` |
+| Username / Password | **留空**（公开镜像不需要） |
+| Provider（若有这栏） | `Custom` / `Other` |
+
+> ⚠️ **加 registry ≠ 替换 Docker Hub**，它只是多了一个可拉取的来源。
+> 拉取时镜像名**必须带前缀**：
+>
+> ```
+> docker.1ms.run/dachuanc/webpokerdealer:latest   ← 走新加的源 ✅
+> dachuanc/webpokerdealer:latest                  ← 仍走 Docker Hub，白加 ❌
+> ```
+>
+> 界面里搜不到也不用管，直接填带前缀的完整名字即可。
+> 想全局透明替换得改宿主机 `daemon.json` 的 `registry-mirrors`
+> （NAS 上不保证支持），所以**用前缀法是正路**。
+
+**国内源实测**（2026-09）：
+
+| 源 | 验证程度 |
+|---|---|
+| **`docker.1ms.run`** | ✅ 完整拉过本站镜像（~104MB）+ `python:3.11-slim` |
+| **`dockerproxy.net`** | ✅ 清掉本地缓存后重拉 `python:3.11-slim` 用了 7.1 秒，确认真代理 blob |
+| `docker.1panel.live` / `hub.rat.dev` | ⚠️ 只验证到能取 manifest，未验证层下载 |
+| ~~`docker.m.daocloud.io`~~ | ❌ 把 blob 重定向回 CloudFront，必失败 |
+| `docker.xuanyuan.me` | ❌ 没有本站镜像 |
+
+### 解法二（保底）：离线搬运，完全不需要网络
+
+```bash
+# 在能联网的机器上（本仓库目录下）
+docker save dachuanc/webpokerdealer:latest -o wpd.tar   # 约 209MB，含 amd64+arm64
+
+# 拷到 NAS（File Station 拖进共享文件夹也行）
+scp wpd.tar admin@<nas>:/share/Public/
+
+# 在 NAS 上执行（需开 SSH：控制台 → Telnet/SSH）
+docker load -i /share/Public/wpd.tar
+```
+
 ## 1. 准备
 
 宿主需要装有 Docker（树莓派装 Docker；多数成品 NAS 支持 Docker / Container Manager）。

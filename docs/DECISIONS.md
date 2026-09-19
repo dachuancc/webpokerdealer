@@ -293,6 +293,10 @@
   - ghcr.io → daemon 配置管不到它，改用「拉镜像源的同名镜像 + 打官方标签」
     （实测 `ghcr.nju.edu.cn` 可用）
   详见 `DEPLOY.md` §0.4。NAS / 树莓派上同理。
+  - **NAS 的图形界面**（QNAP Container Station 等）通常不给改 `daemon.json`，
+    而是在「Registry Servers」里加一个源，然后**用带前缀的镜像名**拉取
+    （实测 `docker.1ms.run/dachuanc/webpokerdealer:latest` 可用）。
+    注意：**加源 ≠ 替换 Docker Hub**，忘了前缀就等于没加。见 `DEPLOY.md` §0.6。
 - **踩过的坑**：**重定向型**加速器（如 `docker.m.daocloud.io`）只代理 manifest、把 blob 指回
   CloudFront，照样撞 IPv6 而失败。挑加速器要挑**真代理 blob** 的。
 - **考虑过的其他选项**：
