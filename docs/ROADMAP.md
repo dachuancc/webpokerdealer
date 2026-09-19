@@ -98,10 +98,14 @@ payload 做路径白名单 + 逐条规则核对）与 `tests/test_redaction_chok
       已知现象：qemu 下 `HEALTHCHECK` 会误报 unhealthy（解释器启动 8.8 秒 vs 原生 0.12 秒），
       真机原生无此问题，详见 `DEPLOY.md` §0.1
 - [x] **发布流程就绪**：`.github/workflows/publish.yml`（打 `v*` tag → 跑测试 → 构建
-      amd64+arm64 → 推 Docker Hub，本地零凭据）；已过 `actionlint` 校验，
-      各 Action 版本对照过最新发布；目的地选 Docker Hub 的理由见 D20
-- [ ] **首次发布实测**（需要 Docker Hub token + GitHub secrets），并在 NAS / 树莓派上实测拉取
+      amd64+arm64 → 推 Docker Hub，本地零凭据）；已过 `actionlint` 校验；
+      目的地选 Docker Hub 的理由见 D20
+- [x] **首次发布实测**（`v0.1.0`，2026-09）：CI 两个 job 全绿（测试 34 秒 / 构建推送 1m35s）；
+      镜像已上线 **`dachuanc/webpokerdealer`**，标签 `latest` / `0.1` / `0.1.0`，
+      **每个标签都含 amd64 + arm64**、无 `unknown/unknown` 条目（`provenance: false` 生效）、
+      **公开可匿名拉取**（拉取摘要与 CI 日志一致），且已拉下来跑通完整 WS 流程
       —— `arm/v7` 已弃用，原因见 D15「修订」
+- [ ] **在 NAS / 树莓派上实测拉取并跑一局**（需要真设备；本机只能验证到“匿名可拉、能跑”）
 - [ ] **树莓派便携部署**：compose 常驻 + 开机自启 + mDNS 地址（`<主机名>.local`）；
       部署前先 `uname -m` 确认是 64 位系统（`aarch64`）
 - [ ] 可选：Pi 热点模式 / 旅行路由器；`WPD_PUBLIC_BASE_URL` 固定地址

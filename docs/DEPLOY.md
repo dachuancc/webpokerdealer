@@ -50,7 +50,8 @@ docker buildx build \
 - **不含 `linux/arm/v7`（32 位 ARM），这是有意的**：`ghcr.io/astral-sh/uv` 不发布 arm/v7
   镜像，且 `uvloop` / `httptools` / `pyyaml` 没有 armv7 预编译 wheel（arm64 有）。
   详见 `DECISIONS.md` D15「修订」。32 位树莓派请先刷 64 位系统。
-- **镜像由 CI 构建并推送到 Docker Hub**（打 `v*` tag 触发），用法见 §0.5。
+- **镜像由 CI 构建并推送到 Docker Hub**（打 `v*` tag 触发），现成的镜像：
+  `dachuanc/webpokerdealer:latest`（amd64 + arm64）。用法见 §0.5。
 - **在 amd64 机器上交叉构建 arm64**：本机需要 `qemu-user-static` + `binfmt-support`
   （让内核能执行 arm64 二进制）。构建阶段会被模拟、慢一些（实测：单架构 16 秒、
   **双架构 117 秒**）；**镜像跑到 Pi 上是原生执行**，树莓派侧不需要任何模拟层。
@@ -165,10 +166,12 @@ git push origin v0.1.0
 **在 NAS / 树莓派上使用**：
 
 ```bash
-docker pull <你的用户名>/webpokerdealer:latest
+docker pull dachuanc/webpokerdealer:latest
 ```
 
-公开镜像**不需要登录**；NAS 的 Docker 面板里也能直接搜到（这正是选 Docker Hub 的原因）。
+同一个 tag 里同时有 `amd64` 与 `arm64`，Docker 会按宿主机架构自动选。
+公开镜像**不需要登录**（已实测匿名拉取成功）；NAS 的 Docker 面板里也能直接搜到
+（这正是选 Docker Hub 的原因）。
 
 > workflow 里的镜像名是 `<DOCKERHUB_USERNAME>/webpokerdealer`（用户名取自 secret）。
 > 想换仓库名就改 `images:` 那行。
@@ -180,7 +183,7 @@ docker pull <你的用户名>/webpokerdealer:latest
 **备用方案（拿不到镜像时）**：本机 `save` 成 tar，拷过去 `load`，完全不经过 registry：
 
 ```bash
-docker save <用户名>/webpokerdealer:latest -o wpd.tar   # 多架构镜像可整体打包
+docker save dachuanc/webpokerdealer:latest -o wpd.tar   # 多架构镜像可整体打包
 scp wpd.tar <nas>:/tmp/ && ssh <nas> 'docker load -i /tmp/wpd.tar'
 ```
 
