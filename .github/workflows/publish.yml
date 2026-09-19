@@ -22,7 +22,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
-      - uses: astral-sh/setup-uv@v10
+      # setup-uv 从 v8 起只发完整版本号，没有浮动的 v10 大版本标签
+      # （写成 @v10 会报 Unable to resolve action），所以这里钉到具体版本。
+      - uses: astral-sh/setup-uv@v10.1.0
       - name: 单元测试
         run: uv run pytest
       - name: 穷举级测试（评估器对拍，约 15 秒）
