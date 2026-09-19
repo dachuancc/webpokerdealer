@@ -179,9 +179,26 @@
   **不引入公网 / 云 / HTTPS**（同网段即可，手机需与宿主同一局域网）。
 - 宿主可选：**NAS**（家里长期）/ **树莓派**（随身便携）/ PC（临时）。
   客户端（手机、平板、**iPad**）只浏览器访问；**iPad 不能跑 Docker**。
-- 镜像发布为**多架构**（`linux/amd64` + `linux/arm64` + `linux/arm/v7`），
-  NAS 与树莓派都能直接 `docker pull`；推送用 Docker Hub 或 GHCR，
-  **凭据只在本机，不入库**。
+- 镜像发布为**多架构**（`linux/amd64` + `linux/arm64`），NAS 与树莓派都能直接
+  `docker pull`；推送用 Docker Hub 或 GHCR，**凭据只在本机，不入库**。
+  - **修订（首次落地时）：放弃 `linux/arm/v7`（32 位 ARM）**，原计划是 amd64 + arm64 + arm/v7。
+    预检（无需 Docker）发现两条硬伤：
+    ① `ghcr.io/astral-sh/uv:latest` 只发布 `amd64` / `arm64` 两个平台，Dockerfile 里
+    `COPY --from=ghcr.io/astral-sh/uv` 在 arm/v7 上**必然失败**；
+    ② 运行时依赖 `uvloop` 与 `httptools`（以及 `uvicorn[standard]` 带的 `pyyaml`）
+    **没有 armv7 预编译 wheel**（arm64 有），缺 wheel 就要在镜像里现编译 C 扩展，
+    而镜像里没有任何编译工具链。
+    收益只有「支持 32 位 Raspberry Pi OS」一项，而 Pi 3/4/5 与 Zero 2 W 都支持 64 位系统，
+    不值得为此在 Dockerfile 里加一套交叉编译分支。
+  - **「硬件支持 64 位」≠「系统是 64 位」**：树莓派 4 的 CPU（Cortex-A72 / ARMv8-A）确实支持
+    arm64，但它若装的是 32 位 Raspberry Pi OS，内核就是 armv7，**无法运行 arm64 镜像**。
+    部署前用 `uname -m` 确认（`aarch64` = 64 位），详见 `DEPLOY.md` §0。
+  - **交叉构建只在本地发生**：在 amd64 机器上构建 arm64 镜像需要本机装
+    `qemu-user-static` + `binfmt-support`（让内核能执行 arm64 二进制）。
+    这一步纯粹服务于**构建阶段**（会被模拟执行、慢一些）；镜像跑到树莓派上是**原生执行**，
+    树莓派侧不需要任何模拟层。
+  - **首次落地的前提**：Dockerfile 与 compose 是写文档那一轮顺手写的，当时本机没装 Docker，
+    所以**从未构建过**。M4 的第一件事就是真正构建 + 跑容器验证，验证过再谈发布。
 - 树莓派便携注意：用 mDNS（`<主机名>.local`）找地址（Android 解析不总可靠→靠二维码）；
   留意访客 Wi‑Fi 的**客户端隔离**（可让 Pi 开热点或带旅行路由器）；外出需供电。
 - 详细步骤与对比表见 `docs/DEPLOY.md`。

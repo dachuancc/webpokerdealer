@@ -35,7 +35,8 @@ iPad 不能跑 Docker —— 见 `DECISIONS.md` D15 与 `docs/DEPLOY.md` §0。�
 
 ## 下一步
 
-**M4 部署** —— 发布多架构镜像 / 树莓派便携部署 / NAS 实测。
+**M4 部署** —— 第一步是**装 Docker 并验证镜像真能构建、容器真能跑**（Dockerfile 写下来时
+本机尚无 Docker，**从未构建过一次**），然后才是发布多架构镜像 / 树莓派便携部署 / NAS 实测。
 详见 `DECISIONS.md` **D15** 与 `docs/DEPLOY.md` §0。
 
 **可选增强（非必须，来自同类项目调研）** —— 见 `docs/PRIOR-ART.md` §5：
@@ -83,10 +84,14 @@ iPad 不能跑 Docker —— 见 `DECISIONS.md` D15 与 `docs/DEPLOY.md` §0。�
 - [ ] 多桌（房间列表）
 
 ### M4 部署 —— 🟡 进行中
-- [x] Dockerfile + compose + 部署文档（`docs/DEPLOY.md`）
-- [ ] 发布**多架构镜像**（Docker Hub / GHCR；amd64 + arm64 + arm/v7）
+- [ ] **验证镜像真能构建与运行** —— Dockerfile / compose 已写好，但写时本机没有 Docker，
+      **从未构建过一次**；未验证前不得当作已完成（见 D15「修订」与 `DEPLOY.md` §2）
+- [x] 部署文档（`docs/DEPLOY.md`）
+- [ ] 发布**多架构镜像**（Docker Hub / GHCR；`linux/amd64` + `linux/arm64`）
+      —— `arm/v7` 已弃用，原因见 D15「修订」
 - [ ] 真机实测：局域网访问、端口、二维码可达性（NAS 或 PC）
-- [ ] **树莓派便携部署**：compose 常驻 + 开机自启 + mDNS 地址（`<主机名>.local`）
+- [ ] **树莓派便携部署**：compose 常驻 + 开机自启 + mDNS 地址（`<主机名>.local`）；
+      部署前先 `uname -m` 确认是 64 位系统（`aarch64`）
 - [ ] 可选：Pi 热点模式 / 旅行路由器；`WPD_PUBLIC_BASE_URL` 固定地址
 - [ ] 反向代理 / HTTPS 场景下 `WPD_PUBLIC_BASE_URL` 验证
 

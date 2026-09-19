@@ -16,20 +16,47 @@ NAS、树莓派或一台 PC；客户端（手机/平板）只浏览器访问，*
 要点：牌桌状态在内存（见 `DECISIONS.md` D2），只需“一场牌局期间服务开着”即可。
 局域网 + WebSocket 即可，**不需要公网 / 云 / HTTPS**。
 
+### 部署前第一件事：确认宿主 CPU 架构
+
+镜像按 CPU 架构分发，**拉错架构会直接起不来**。在宿主机上跑：
+
+```bash
+uname -m
+# x86_64  → linux/amd64（多数 NAS、PC）
+# aarch64 → linux/arm64（树莓派 64 位系统、部分 ARM NAS）
+# armv7l  → 32 位系统：本项目**不发布** arm/v7 镜像（原因见 §0.1），
+#            树莓派请先刷 64 位系统（Pi 3/4/5、Zero 2 W 都支持）
+```
+
+⚠️ **「硬件支持 64 位」≠「系统是 64 位」**：树莓派 4 的 CPU（Cortex-A72 / ARMv8-A）确实
+支持 arm64，但若装的是 32 位 Raspberry Pi OS，内核就是 armv7，**arm64 镜像跑不了**
+（32 位内核无法执行 64 位容器）。唯一判断依据就是 `uname -m` 的输出。
+
 ## 0.1 镜像：发布多架构，通吃 NAS 与树莓派
 
 Docker 镜像是标准格式，群晖 / 威联通 / TrueNAS / unRAID / 树莓派都能 `docker pull`。
-但**架构要对**：多数 NAS 是 `linux/amd64`，树莓派与部分 ARM NAS 是 `linux/arm64`
-（64 位系统）或 `linux/arm/v7`（32 位系统）。所以发布**多架构镜像**：
+但**架构要对**（先做上面的 `uname -m` 自检）：多数 NAS 是 `linux/amd64`，
+树莓派与部分 ARM NAS 是 `linux/arm64`。所以发布**多架构镜像**：
 
 ```bash
 docker buildx create --use --name wpd
 docker buildx build \
-  --platform linux/amd64,linux/arm64,linux/arm/v7 \
+  --platform linux/amd64,linux/arm64 \
   -t <dockerhub-user>/webpokerdealer:latest --push .
 # 或用 GHCR（与仓库同源、限额更宽松）：
 #   -t ghcr.io/<user>/webpokerdealer:latest --push .
 ```
+
+- **不含 `linux/arm/v7`（32 位 ARM），这是有意的**：`ghcr.io/astral-sh/uv` 不发布 arm/v7
+  镜像，且 `uvloop` / `httptools` / `pyyaml` 没有 armv7 预编译 wheel（arm64 有）。
+  详见 `DECISIONS.md` D15「修订」。32 位树莓派请先刷 64 位系统。
+- **在 amd64 机器上交叉构建 arm64**：本机需要 `qemu-user-static` + `binfmt-support`
+  （让内核能执行 arm64 二进制）。构建阶段会被模拟、慢一些；**镜像跑到 Pi 上是原生执行**，
+  树莓派侧不需要任何模拟层。若 buildx 报 `exec format error`，改用 BuildKit 官方推荐的
+  方式重装 handler：
+  ```bash
+  docker run --privileged --rm tonistiigi/binfmt --install arm64
+  ```
 
 - 需先 `docker login`（Docker Hub）或 `docker login ghcr.io`（用 PAT）。
   **凭据只留在本机，切勿提交**（安全红线）。
@@ -40,6 +67,8 @@ docker buildx build \
 
 一台闲置树莓派即可当“随身发牌服务器”：和手机 / 平板在同一局域网就能玩。
 
+- **必须是 64 位系统**：`uname -m` 显示 `aarch64` 才行（Pi 3/4/5、Zero 2 W 都支持）。
+  若显示 `armv7l`，先刷 64 位 Raspberry Pi OS —— 本项目不发布 arm/v7 镜像（见 §0.1）。
 - 装 Docker，用本仓库 compose（已是 `restart: unless-stopped`），开启 Docker 开机自启
   → **通电即用**。
 - **找地址**：优先 mDNS `http://<主机名>.local:8123`（iOS 支持；**Android 的 `.local`
