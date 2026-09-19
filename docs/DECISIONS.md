@@ -280,3 +280,23 @@
     同时我们自己也更容易无意间「抄了不能抄的代码」。
   - *All rights reserved / 自定义许可* —— 对本项目过重，无收益。
 - **影响**：新增依赖或内置素材前先确认许可证（D16 的 `deuces` 就是「星最多但被排除」的案例）。
+
+## D19 Dockerfile 保持官方镜像源；国内网络在宿主机侧解决
+
+- **决定**：Dockerfile 的 `FROM python:3.12-slim` 与 `COPY --from=ghcr.io/astral-sh/uv`
+  **不改成任何国内镜像源**。
+- **原因**：这是要公开发布的多架构镜像，写死某个第三方加速器等于让**所有人**（包括国外用户）
+  依赖它的可用性。镜像的**可移植性**比国内下载速度重要。
+- **代价与对策**：国内网络下 Docker Hub 与 ghcr.io 的 CDN 走 IPv6 会被 RST
+  （`read: connection reset by peer`）。对策在**宿主机**侧，一次配好长期有效：
+  - Docker Hub → `/etc/docker/daemon.json` 的 `registry-mirrors`（实测 `docker.1ms.run` 可用）
+  - ghcr.io → daemon 配置管不到它，改用「拉镜像源的同名镜像 + 打官方标签」
+    （实测 `ghcr.nju.edu.cn` 可用）
+  详见 `DEPLOY.md` §0.4。NAS / 树莓派上同理。
+- **踩过的坑**：**重定向型**加速器（如 `docker.m.daocloud.io`）只代理 manifest、把 blob 指回
+  CloudFront，照样撞 IPv6 而失败。挑加速器要挑**真代理 blob** 的。
+- **考虑过的其他选项**：
+  - *在 Dockerfile 里写死国内源* —— 污染公开镜像的可移植性，拖累国外用户。
+  - *把 uv 从 ghcr 改成 `pip install uv`*（绕开 ghcr）—— 改变了依赖安装方式、多一层不确定性；
+    而问题本身在宿主机网络，不在 Dockerfile。
+  - *构建时关掉系统 IPv6* —— 能绕过，但为一个镜像构建去改整机网络配置，副作用太大。

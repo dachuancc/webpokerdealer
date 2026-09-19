@@ -30,8 +30,10 @@ payload 做路径白名单 + 逐条规则核对）与 `tests/test_redaction_chok
 通过 CSS 变量 + localStorage 实现，各设备独立记忆（见 D14）。牌面样式另备一套
 可选矢量牌（Byron Knoll，公有领域）。
 
-**部署方案已定档**（本轮只写文档，未写代码）：形态选择 / 多架构镜像 / 树莓派便携 /
-iPad 不能跑 Docker —— 见 `DECISIONS.md` D15 与 `docs/DEPLOY.md` §0。下一步按此实现。
+**部署已落地第一步**：Dockerfile / compose **首次真正构建并验证**（16 秒、无警告，
+容器 healthy + 非 root，局域网访问与二维码地址实测正确，容器内跑通完整 WS 流程）。
+部署形态与多架构方案见 `DECISIONS.md` D15（含 `arm/v7` 已弃用的理由）；
+国内拉镜像的坑与解法见 `DEPLOY.md` §0.4 / D19。下一步：多架构镜像发布 + 树莓派实测。
 
 ## 下一步
 
@@ -84,16 +86,22 @@ iPad 不能跑 Docker —— 见 `DECISIONS.md` D15 与 `docs/DEPLOY.md` §0。�
 - [ ] 多桌（房间列表）
 
 ### M4 部署 —— 🟡 进行中
-- [ ] **验证镜像真能构建与运行** —— Dockerfile / compose 已写好，但写时本机没有 Docker，
-      **从未构建过一次**；未验证前不得当作已完成（见 D15「修订」与 `DEPLOY.md` §2）
+- [x] **镜像真的能构建与运行**（实测）：首次构建 **16 秒**、无警告；产物 449MB；
+      容器 `HEALTHCHECK` 报 **healthy**（`Up N seconds (healthy)`）、**非 root**（`uid=1000(app)`）；
+      `docker compose up -d --build`（就是 `DEPLOY.md` 里那条命令）直接可用
+- [x] **真机实测**：局域网 `http://192.168.30.13:8123` 返回 200；二维码指向局域网 IP
+      （`http://192.168.30.13:8123/play/<牌桌号>`，**不是 localhost**）；容器内跑通完整 WS 流程
+      （发底牌 → 底牌隔离 → 中途入座旁观 → 摊牌）
 - [x] 部署文档（`docs/DEPLOY.md`）
 - [ ] 发布**多架构镜像**（Docker Hub / GHCR；`linux/amd64` + `linux/arm64`）
       —— `arm/v7` 已弃用，原因见 D15「修订」
-- [ ] 真机实测：局域网访问、端口、二维码可达性（NAS 或 PC）
 - [ ] **树莓派便携部署**：compose 常驻 + 开机自启 + mDNS 地址（`<主机名>.local`）；
       部署前先 `uname -m` 确认是 64 位系统（`aarch64`）
 - [ ] 可选：Pi 热点模式 / 旅行路由器；`WPD_PUBLIC_BASE_URL` 固定地址
 - [ ] 反向代理 / HTTPS 场景下 `WPD_PUBLIC_BASE_URL` 验证
+
+> 国内的坑（已记录）：Docker Hub / ghcr.io 的 CDN 走 IPv6 会被 RST，需配 registry 镜像
+> （Docker Hub）或带前缀拉取（ghcr）—— 见 `DEPLOY.md` §0.4 与 `DECISIONS.md` D19。
 
 > 方案与对比见 `docs/DEPLOY.md` §0（谁当宿主 / 多架构镜像 / 树莓派便携 / iPad 不能跑 Docker）。
 

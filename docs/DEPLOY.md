@@ -87,6 +87,51 @@ docker buildx build \
 **不能。** iPadOS 没有 Linux 内核，也限制虚拟机 / 容器所需能力；iPad 在本项目里是
 **客户端**（或公牌桌）。宿主用 NAS / 树莓派 / PC。
 
+## 0.4 国内网络：拉镜像会撞的坑（Docker Hub / ghcr.io 的 IPv6）
+
+**症状**：`docker pull python:3.12-slim` 失败，报
+
+```
+read tcp [240e:...]:48206->[2600:9000:...]:443: read: connection reset by peer
+```
+
+`2600:9000::` 是 Docker Hub 的 CloudFront，`2606:50c0::` 是 GitHub（ghcr.io）。
+这两个 registry 的 CDN 走 **IPv6** 时连接会被重置；**不是 DNS、也不是凭据问题**，
+重试多少次都一样。
+
+**解法 A（推荐，治本）：给 Docker 配 registry 镜像**（只对 Docker Hub 生效）
+
+```bash
+sudo mkdir -p /etc/docker
+echo '{"registry-mirrors": ["https://docker.1ms.run"]}' | sudo tee /etc/docker/daemon.json
+sudo systemctl restart docker
+```
+
+配完之后 `docker pull python:3.12-slim` 直接可用，不用改镜像名。
+
+**解法 B：ghcr.io 的镜像**（daemon 的 `registry-mirrors` 管不到 ghcr）——先拉镜像源的同名
+镜像，再打上官方标签：
+
+```bash
+docker pull ghcr.nju.edu.cn/astral-sh/uv:latest
+docker tag  ghcr.nju.edu.cn/astral-sh/uv:latest ghcr.io/astral-sh/uv:latest
+```
+
+**已实测可用（2026-09）**：
+
+| 用途 | 地址 | 备注 |
+|---|---|---|
+| Docker Hub | `docker.1ms.run` | **真代理 blob**，可用 |
+| ghcr.io | `ghcr.nju.edu.cn` | 南大镜像，可用 |
+| ghcr.io | `ghcr.dockerproxy.net` | 备用，可用 |
+| ❌ Docker Hub | `docker.m.daocloud.io` | **重定向型**：blob 被指回 CloudFront，照样失败 |
+
+**两个注意**：
+
+- 镜像源看得到你拉取的**公开**镜像（本项目不推私有镜像，可接受）；敏感场景请自建。
+- 本仓库的 Dockerfile **故意不写死任何国内镜像源**——保持可移植性，国内网络用上面的办法
+  在**宿主机**解决（NAS / 树莓派上同理，一次配好长期有效）。见 `DECISIONS.md` D19。
+
 ## 1. 准备
 
 宿主需要装有 Docker（树莓派装 Docker；多数成品 NAS 支持 Docker / Container Manager）。
