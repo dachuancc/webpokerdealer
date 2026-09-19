@@ -150,9 +150,21 @@ docker tag  ghcr.nju.edu.cn/astral-sh/uv:latest ghcr.io/astral-sh/uv:latest
 
 1. Docker Hub 账号（**邮箱需验证**，否则推不上去）
 2. 建一个 access token：Account Settings → Security → New Access Token（**Read & Write**）
-3. 在 GitHub 仓库加两个 secret（Settings → Secrets and variables → Actions）：
+3. 在 GitHub 仓库加两个 secret：
    - `DOCKERHUB_USERNAME`：你的 Docker Hub 用户名
    - `DOCKERHUB_TOKEN`：上一步的 token
+
+> **强烈建议用命令行加 secret，比网页少踩坑**（实测踩过）：
+>
+> ```bash
+> gh secret set DOCKERHUB_USERNAME --repo <owner>/<repo>
+> gh secret set DOCKERHUB_TOKEN    --repo <owner>/<repo>
+> gh secret list  --repo <owner>/<repo>          # 自查
+> ```
+>
+> 网页那个页面（Settings → Secrets and variables）有 **Actions / Codespaces / Dependabot
+> 三个完全独立的标签页**，加错标签 workflow 读不到，失败信息是含糊的
+> `Username and password required`，很难一眼看出错在哪。命令行没有这个问题。
 
 **发布**：
 

@@ -115,6 +115,10 @@ payload 做路径白名单 + 逐条规则核对）与 `tests/test_redaction_chok
       **前置条件：先在 Pi 上 `uname -m` 确认是 64 位系统（`aarch64`）**，否则吃不了 arm64 镜像
 - [ ] 可选：Pi 热点模式 / 旅行路由器；`WPD_PUBLIC_BASE_URL` 固定地址
 - [ ] 反向代理 / HTTPS 场景下 `WPD_PUBLIC_BASE_URL` 验证
+- [ ] 可选：`.env` 开关，让 `docker compose up -d` 能在「本地构建」与「拉现成镜像」之间选
+      （目前只能在 `docker-compose.yml` 里手动改 `image:` / 删 `build:`，见 `DEPLOY.md` §2）
+- [ ] 可选：发版时顺手建个 GitHub Release（写清镜像在哪、怎么拉、怎么用），
+      目前只有 tag，信息散在 `DEPLOY.md`
 
 > 国内的坑（已记录）：Docker Hub / ghcr.io 的 CDN 走 IPv6 会被 RST，需配 registry 镜像
 > （Docker Hub）或带前缀拉取（ghcr）—— 见 `DEPLOY.md` §0.4 与 `DECISIONS.md` D19。
